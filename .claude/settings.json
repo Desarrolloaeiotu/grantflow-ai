@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(python3.12 --version)",
+      "Bash(py -3.12 --version)",
+      "Bash(python3.12 -m venv .venv)",
+      "Read(//c/Users/Luis Mendez/AppData/Local/Programs/Python//**)",
+      "Read(//c//**)",
+      "Read(//c/Users/Luis Mendez/**)",
+      "Bash(/c/Users/\"Luis Mendez\"/AppData/Local/Programs/Python/Python312/python.exe --version)",
+      "Bash(/c/Users/\"Luis Mendez\"/AppData/Local/Programs/Python/Python312/python.exe -m venv .venv)",
+      "Bash(.venv/Scripts/pip install *)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(sed -i '4,214d' page.tsx)",
+      "Bash(sed -n '1,8p' page.tsx)",
+      "Bash(git add *)"
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "GrantFlow — Weekly Digest (lunes 8am)",
+  "nodes": [
+    {
+      "name": "Cron Monday 8am",
+      "type": "n8n-nodes-base.cron",
+      "parameters": {
+        "triggerTimes": {
+          "item": [{ "mode": "everyWeek", "weekday": 1, "hour": 8, "minute": 0 }]
+        }
+      },
+      "position": [250, 300]
+    },
+    {
+      "name": "Get Top 10 GO",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.GRANTFLOW_API_URL }}/api/v1/opportunities?decision=go&size=10",
+        "method": "GET"
+      },
+      "position": [450, 300]
+    },
+    {
+      "name": "Send Email Digest",
+      "type": "n8n-nodes-base.emailSend",
+      "parameters": {
+        "toEmail": "alianzas@aeiotu.org",
+        "subject": "📊 GrantFlow Weekly — Top oportunidades GO",
+        "text": "={{ 'Top 10 oportunidades GO esta semana:\\n\\n' + $json.items.map((o, i) => `${i+1}. ${o.title} (Score: ${o.score_total}) — Cierre: ${o.deadline ?? 'N/A'}`).join('\\n') }}"
+      },
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Cron Monday 8am": { "main": [[{ "node": "Get Top 10 GO", "type": "main", "index": 0 }]] },
+    "Get Top 10 GO": { "main": [[{ "node": "Send Email Digest", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "tags": ["grantflow", "digest"]
+}

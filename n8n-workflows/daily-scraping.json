@@ -1,0 +1,41 @@
+{
+  "name": "GrantFlow — Daily Scraping",
+  "nodes": [
+    {
+      "name": "Cron 6am",
+      "type": "n8n-nodes-base.cron",
+      "parameters": {
+        "triggerTimes": {
+          "item": [{ "mode": "everyDay", "hour": 6, "minute": 0 }]
+        }
+      },
+      "position": [250, 300]
+    },
+    {
+      "name": "Run Scrapers",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.GRANTFLOW_API_URL }}/api/v1/scrape/run",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "position": [450, 300]
+    },
+    {
+      "name": "Notify Slack on Error",
+      "type": "n8n-nodes-base.slack",
+      "parameters": {
+        "channel": "#dev-alerts",
+        "text": "ERROR en scraping diario GrantFlow: {{ $json.error }}"
+      },
+      "position": [650, 400]
+    }
+  ],
+  "connections": {
+    "Cron 6am": { "main": [[{ "node": "Run Scrapers", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": {},
+  "tags": ["grantflow", "scraping"]
+}

@@ -1,0 +1,48 @@
+{
+  "name": "GrantFlow — Deadline Alerts (7/15/30 días)",
+  "nodes": [
+    {
+      "name": "Cron 9am",
+      "type": "n8n-nodes-base.cron",
+      "parameters": {
+        "triggerTimes": {
+          "item": [{ "mode": "everyDay", "hour": 9, "minute": 0 }]
+        }
+      },
+      "position": [250, 300]
+    },
+    {
+      "name": "Query GO Opportunities",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "url": "={{ $env.GRANTFLOW_API_URL }}/api/v1/opportunities?decision=go&urgency=high",
+        "method": "GET"
+      },
+      "position": [450, 300]
+    },
+    {
+      "name": "Filter 7/15/30 days",
+      "type": "n8n-nodes-base.code",
+      "parameters": {
+        "jsCode": "const today = new Date();\nconst items = $input.all();\nconst alerts = items[0].json.items.filter(opp => {\n  if (!opp.deadline) return false;\n  const deadline = new Date(opp.deadline);\n  const days = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));\n  return [7, 15, 30].includes(days);\n});\nreturn [{ json: { alerts } }];"
+      },
+      "position": [650, 300]
+    },
+    {
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "parameters": {
+        "channel": "#alianzas",
+        "text": "={{ '⏰ *Oportunidades GO con vencimiento próximo:*\\n' + $json.alerts.map(o => `• *${o.title}* — Score: ${o.score_total} — Cierra: ${o.deadline}`).join('\\n') }}"
+      },
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Cron 9am": { "main": [[{ "node": "Query GO Opportunities", "type": "main", "index": 0 }]] },
+    "Query GO Opportunities": { "main": [[{ "node": "Filter 7/15/30 days", "type": "main", "index": 0 }]] },
+    "Filter 7/15/30 days": { "main": [[{ "node": "Send Slack Alert", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "tags": ["grantflow", "alerts"]
+}

@@ -1,0 +1,51 @@
+version: "3.9"
+
+# Stack de automatización: n8n + Metabase + PostgreSQL
+# Levantar con: docker compose -f infra/docker-compose.yml up -d
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: grantflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: admin
+      N8N_BASIC_AUTH_PASSWORD: changeme
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      WEBHOOK_URL: http://localhost:5678/
+      GRANTFLOW_API_URL: http://host.docker.internal:8000
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - postgres
+
+  metabase:
+    image: metabase/metabase:latest
+    ports:
+      - "3001:3000"
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabase
+      MB_DB_PORT: 5432
+      MB_DB_USER: postgres
+      MB_DB_PASS: postgres
+      MB_DB_HOST: postgres
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
+  n8n_data:
