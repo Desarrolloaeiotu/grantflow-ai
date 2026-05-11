@@ -1,48 +1,100 @@
 {
-  "name": "GrantFlow — Deadline Alerts (7/15/30 días)",
+  "name": "GrantFlow — Deadline Alerts (≤30 días)",
   "nodes": [
     {
-      "name": "Cron 9am",
-      "type": "n8n-nodes-base.cron",
       "parameters": {
-        "triggerTimes": {
-          "item": [{ "mode": "everyDay", "hour": 9, "minute": 0 }]
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
         }
       },
+      "id": "schedule-trigger",
+      "name": "Diario 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [250, 300]
     },
     {
-      "name": "Query GO Opportunities",
-      "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{ $env.GRANTFLOW_API_URL }}/api/v1/opportunities?decision=go&urgency=high",
-        "method": "GET"
+        "url": "={{ $env.GRANTFLOW_API_URL }}/api/v1/opportunities",
+        "method": "GET",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "decision", "value": "go" },
+            { "name": "days_to_deadline", "value": "30" },
+            { "name": "size", "value": "100" }
+          ]
+        }
       },
+      "id": "fetch-go",
+      "name": "GET opps GO ≤30d",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [450, 300]
     },
     {
-      "name": "Filter 7/15/30 days",
-      "type": "n8n-nodes-base.code",
       "parameters": {
-        "jsCode": "const today = new Date();\nconst items = $input.all();\nconst alerts = items[0].json.items.filter(opp => {\n  if (!opp.deadline) return false;\n  const deadline = new Date(opp.deadline);\n  const days = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));\n  return [7, 15, 30].includes(days);\n});\nreturn [{ json: { alerts } }];"
+        "jsCode": "const today = new Date();\nconst items = $input.first().json.items || [];\n\nconst buckets = { d7: [], d15: [], d30: [] };\nfor (const opp of items) {\n  if (!opp.deadline) continue;\n  const days = Math.ceil((new Date(opp.deadline) - today) / 86400000);\n  if (days <= 7) buckets.d7.push({ ...opp, days });\n  else if (days <= 15) buckets.d15.push({ ...opp, days });\n  else if (days <= 30) buckets.d30.push({ ...opp, days });\n}\n\nconst fmt = (arr) => arr.map(o => `• *${o.title}* — Score ${o.score_total} — Cierra en ${o.days}d (${o.deadline})`).join('\\n');\n\nlet text = '⏰ *Oportunidades GO con vencimiento próximo*\\n\\n';\nif (buckets.d7.length) text += `🔴 *≤7 días (${buckets.d7.length})*\\n${fmt(buckets.d7)}\\n\\n`;\nif (buckets.d15.length) text += `🟡 *≤15 días (${buckets.d15.length})*\\n${fmt(buckets.d15)}\\n\\n`;\nif (buckets.d30.length) text += `🟢 *≤30 días (${buckets.d30.length})*\\n${fmt(buckets.d30)}\\n\\n`;\n\nconst hasAny = buckets.d7.length + buckets.d15.length + buckets.d30.length > 0;\nreturn [{ json: { text, hasAny, counts: { d7: buckets.d7.length, d15: buckets.d15.length, d30: buckets.d30.length } } }];"
       },
+      "id": "build-message",
+      "name": "Agrupar 7/15/30",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [650, 300]
     },
     {
-      "name": "Send Slack Alert",
-      "type": "n8n-nodes-base.slack",
       "parameters": {
-        "channel": "#alianzas",
-        "text": "={{ '⏰ *Oportunidades GO con vencimiento próximo:*\\n' + $json.alerts.map(o => `• *${o.title}* — Score: ${o.score_total} — Cierra: ${o.deadline}`).join('\\n') }}"
+        "conditions": {
+          "options": { "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.hasAny }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ]
+        }
       },
+      "id": "if-has-alerts",
+      "name": "¿Hay alertas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
       "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $json.text }}\",\n  \"channel\": \"#alianzas\"\n}"
+      },
+      "id": "slack-alert",
+      "name": "Slack #alianzas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 300]
     }
   ],
   "connections": {
-    "Cron 9am": { "main": [[{ "node": "Query GO Opportunities", "type": "main", "index": 0 }]] },
-    "Query GO Opportunities": { "main": [[{ "node": "Filter 7/15/30 days", "type": "main", "index": 0 }]] },
-    "Filter 7/15/30 days": { "main": [[{ "node": "Send Slack Alert", "type": "main", "index": 0 }]] }
+    "Diario 9am": { "main": [[{ "node": "GET opps GO ≤30d", "type": "main", "index": 0 }]] },
+    "GET opps GO ≤30d": { "main": [[{ "node": "Agrupar 7/15/30", "type": "main", "index": 0 }]] },
+    "Agrupar 7/15/30": { "main": [[{ "node": "¿Hay alertas?", "type": "main", "index": 0 }]] },
+    "¿Hay alertas?": {
+      "main": [
+        [{ "node": "Slack #alianzas", "type": "main", "index": 0 }],
+        []
+      ]
+    }
   },
   "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
   "tags": ["grantflow", "alerts"]
 }

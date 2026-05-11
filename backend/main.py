@@ -4,7 +4,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import contacts, dashboard, opportunities, rag, scoring
+from app.api import contacts, dashboard, opportunities, rag, scoring, scrape
 from app.core.config import settings
 from app.core.database import engine
 from app.models import Base
@@ -40,6 +40,7 @@ app.include_router(scoring.router, prefix="/api/v1/opportunities", tags=["scorin
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(contacts.router, prefix="/api/v1/contacts", tags=["contacts"])
 app.include_router(rag.router, prefix="/api/v1/rag", tags=["rag"])
+app.include_router(scrape.router, prefix="/api/v1/scrape", tags=["scrape"])
 
 
 @app.get("/health")

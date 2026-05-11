@@ -2,40 +2,117 @@
   "name": "GrantFlow — Daily Scraping",
   "nodes": [
     {
-      "name": "Cron 6am",
-      "type": "n8n-nodes-base.cron",
       "parameters": {
-        "triggerTimes": {
-          "item": [{ "mode": "everyDay", "hour": 6, "minute": 0 }]
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
         }
       },
+      "id": "schedule-trigger",
+      "name": "Diario 6am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [250, 300]
     },
     {
-      "name": "Run Scrapers",
-      "type": "n8n-nodes-base.httpRequest",
       "parameters": {
         "url": "={{ $env.GRANTFLOW_API_URL }}/api/v1/scrape/run",
         "method": "POST",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth"
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.GRANTFLOW_API_KEY }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "score", "value": "false" }
+          ]
+        },
+        "options": {
+          "timeout": 600000
+        }
       },
+      "id": "run-scrapers",
+      "name": "POST /scrape/run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [450, 300]
     },
     {
-      "name": "Notify Slack on Error",
-      "type": "n8n-nodes-base.slack",
       "parameters": {
-        "channel": "#dev-alerts",
-        "text": "ERROR en scraping diario GrantFlow: {{ $json.error }}"
+        "conditions": {
+          "options": { "version": 2 },
+          "combinator": "or",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.errors.length }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ]
+        }
       },
-      "position": [650, 400]
+      "id": "if-errors",
+      "name": "¿Hubo errores?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"⚠️ *GrantFlow Scraping con errores*\\nPersisted: {{ $('POST /scrape/run').item.json.total_persisted }} | Errores: {{ $('POST /scrape/run').item.json.errors.join(', ') }}\"\n}"
+      },
+      "id": "slack-error",
+      "name": "Slack: Error",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"✅ *GrantFlow Scraping diario OK*\\nNuevas oportunidades: {{ $('POST /scrape/run').item.json.total_persisted }} | Duración: {{ $('POST /scrape/run').item.json.duration_sec }}s\"\n}"
+      },
+      "id": "slack-ok",
+      "name": "Slack: OK",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 400]
     }
   ],
   "connections": {
-    "Cron 6am": { "main": [[{ "node": "Run Scrapers", "type": "main", "index": 0 }]] }
+    "Diario 6am": {
+      "main": [[{ "node": "POST /scrape/run", "type": "main", "index": 0 }]]
+    },
+    "POST /scrape/run": {
+      "main": [[{ "node": "¿Hubo errores?", "type": "main", "index": 0 }]]
+    },
+    "¿Hubo errores?": {
+      "main": [
+        [{ "node": "Slack: Error", "type": "main", "index": 0 }],
+        [{ "node": "Slack: OK", "type": "main", "index": 0 }]
+      ]
+    }
   },
   "active": false,
-  "settings": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
   "tags": ["grantflow", "scraping"]
 }

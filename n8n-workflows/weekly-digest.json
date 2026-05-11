@@ -2,39 +2,80 @@
   "name": "GrantFlow — Weekly Digest (lunes 8am)",
   "nodes": [
     {
-      "name": "Cron Monday 8am",
-      "type": "n8n-nodes-base.cron",
       "parameters": {
-        "triggerTimes": {
-          "item": [{ "mode": "everyWeek", "weekday": 1, "hour": 8, "minute": 0 }]
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1"
+            }
+          ]
         }
       },
+      "id": "schedule-trigger",
+      "name": "Lunes 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [250, 300]
     },
     {
-      "name": "Get Top 10 GO",
-      "type": "n8n-nodes-base.httpRequest",
       "parameters": {
-        "url": "={{ $env.GRANTFLOW_API_URL }}/api/v1/opportunities?decision=go&size=10",
-        "method": "GET"
+        "url": "={{ $env.GRANTFLOW_API_URL }}/api/v1/opportunities",
+        "method": "GET",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "decision", "value": "go" },
+            { "name": "size", "value": "10" }
+          ]
+        }
       },
+      "id": "fetch-top",
+      "name": "Top 10 GO",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [450, 300]
     },
     {
-      "name": "Send Email Digest",
-      "type": "n8n-nodes-base.emailSend",
       "parameters": {
-        "toEmail": "alianzas@aeiotu.org",
-        "subject": "📊 GrantFlow Weekly — Top oportunidades GO",
-        "text": "={{ 'Top 10 oportunidades GO esta semana:\\n\\n' + $json.items.map((o, i) => `${i+1}. ${o.title} (Score: ${o.score_total}) — Cierre: ${o.deadline ?? 'N/A'}`).join('\\n') }}"
+        "jsCode": "const items = $input.first().json.items || [];\nconst total = $input.first().json.total || 0;\n\nconst rows = items.map((o, i) => {\n  const deadline = o.deadline || 'sin fecha';\n  const score = o.score_total ?? '-';\n  const amount = o.amount_max_cop\n    ? (o.amount_max_cop >= 1e9\n        ? `COP $${(o.amount_max_cop/1e9).toFixed(1)}B`\n        : `COP $${Math.round(o.amount_max_cop/1e6)}M`)\n    : '-';\n  return `<tr>\n    <td style=\"padding:8px;border-bottom:1px solid #eee\">${i+1}</td>\n    <td style=\"padding:8px;border-bottom:1px solid #eee\"><b>${o.title}</b><br/><span style=\"color:#666\">${o.source_name || ''}</span></td>\n    <td style=\"padding:8px;border-bottom:1px solid #eee;text-align:center\"><b>${score}</b>/10</td>\n    <td style=\"padding:8px;border-bottom:1px solid #eee\">${amount}</td>\n    <td style=\"padding:8px;border-bottom:1px solid #eee\">${deadline}</td>\n  </tr>`;\n}).join('');\n\nconst html = `<div style=\"font-family:system-ui,sans-serif;max-width:680px;margin:0 auto\">\n  <h2 style=\"color:#22D3A0\">📊 GrantFlow Weekly</h2>\n  <p>Top ${items.length} oportunidades GO en pipeline (de ${total} totales).</p>\n  <table style=\"width:100%;border-collapse:collapse;font-size:14px\">\n    <thead><tr style=\"background:#f5f5f5\">\n      <th style=\"padding:8px;text-align:left\">#</th>\n      <th style=\"padding:8px;text-align:left\">Oportunidad</th>\n      <th style=\"padding:8px\">Score</th>\n      <th style=\"padding:8px;text-align:left\">Monto</th>\n      <th style=\"padding:8px;text-align:left\">Cierre</th>\n    </tr></thead>\n    <tbody>${rows}</tbody>\n  </table>\n  <p style=\"margin-top:24px;color:#666;font-size:12px\">— Generado por GrantFlow AI</p>\n</div>`;\n\nreturn [{ json: { html, count: items.length, total } }];"
       },
+      "id": "build-html",
+      "name": "Construir HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.resend.com/emails",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.RESEND_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"GrantFlow <noreply@aeiotu.org>\",\n  \"to\": [\"alianzas@aeiotu.org\"],\n  \"subject\": \"📊 GrantFlow Weekly — Top {{ $json.count }} oportunidades GO\",\n  \"html\": {{ JSON.stringify($json.html) }}\n}"
+      },
+      "id": "send-email",
+      "name": "Resend Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 300]
     }
   ],
   "connections": {
-    "Cron Monday 8am": { "main": [[{ "node": "Get Top 10 GO", "type": "main", "index": 0 }]] },
-    "Get Top 10 GO": { "main": [[{ "node": "Send Email Digest", "type": "main", "index": 0 }]] }
+    "Lunes 8am": { "main": [[{ "node": "Top 10 GO", "type": "main", "index": 0 }]] },
+    "Top 10 GO": { "main": [[{ "node": "Construir HTML", "type": "main", "index": 0 }]] },
+    "Construir HTML": { "main": [[{ "node": "Resend Email", "type": "main", "index": 0 }]] }
   },
   "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
   "tags": ["grantflow", "digest"]
 }
