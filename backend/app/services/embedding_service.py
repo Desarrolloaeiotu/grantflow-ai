@@ -5,7 +5,8 @@ NO recalcular si ya existe — ver regla en CLAUDE.md.
 """
 
 import structlog
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.core.config import settings
 
@@ -17,22 +18,23 @@ EMBEDDING_DIMENSION = 768
 
 class EmbeddingService:
     def __init__(self) -> None:
+        self._client: genai.Client | None = None
         if settings.GOOGLE_API_KEY:
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
+            self._client = genai.Client(api_key=settings.GOOGLE_API_KEY)
         else:
             logger.warning("GOOGLE_API_KEY not set — embeddings disabled")
 
     async def embed(self, text: str) -> list[float] | None:
-        if not settings.GOOGLE_API_KEY:
+        if not self._client:
             return None
 
         try:
-            result = genai.embed_content(
+            result = await self._client.aio.models.embed_content(
                 model=EMBEDDING_MODEL,
-                content=text[:8000],  # Límite de tokens del modelo
-                task_type="RETRIEVAL_DOCUMENT",
+                contents=text[:8000],
+                config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
             )
-            embedding: list[float] = result["embedding"]
+            embedding: list[float] = result.embeddings[0].values
             if len(embedding) != EMBEDDING_DIMENSION:
                 logger.warning(
                     "Unexpected embedding dimension",
@@ -45,16 +47,16 @@ class EmbeddingService:
             return None
 
     async def embed_query(self, text: str) -> list[float] | None:
-        if not settings.GOOGLE_API_KEY:
+        if not self._client:
             return None
 
         try:
-            result = genai.embed_content(
+            result = await self._client.aio.models.embed_content(
                 model=EMBEDDING_MODEL,
-                content=text,
-                task_type="RETRIEVAL_QUERY",
+                contents=text,
+                config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY"),
             )
-            return result["embedding"]
+            return result.embeddings[0].values
         except Exception as exc:
             logger.error("Query embedding failed", error=str(exc))
             return None

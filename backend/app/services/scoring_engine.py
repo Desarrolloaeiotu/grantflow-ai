@@ -5,16 +5,16 @@ Criterios 1-2: evaluados por LLM (Claude por defecto, Gemini como fallback).
 Criterios 3-5: reglas deterministas.
 """
 
-import asyncio
 import json
 import re
 import uuid
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 
-import google.generativeai as genai
 import structlog
 from anthropic import AsyncAnthropic
+from google import genai
+from google.genai import types
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -103,17 +103,16 @@ def _extract_json(raw: str) -> dict:
 class ScoringEngine:
     def __init__(self) -> None:
         self._anthropic: AsyncAnthropic | None = None
-        self._gemini: genai.GenerativeModel | None = None
+        self._gemini: genai.Client | None = None
 
         if settings.ANTHROPIC_API_KEY:
             self._anthropic = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
             self._provider = "anthropic"
         elif settings.GOOGLE_API_KEY:
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
             # gemini-2.5-flash: ~250 RPD free tier.
             # Cuota PerModel separada de 2.0-flash y 2.5-flash-lite (ambos
             # ya consumidos hoy). Permite procesar otro batch grande.
-            self._gemini = genai.GenerativeModel("gemini-2.5-flash")
+            self._gemini = genai.Client(api_key=settings.GOOGLE_API_KEY)
             self._provider = "gemini"
         else:
             self._provider = "none"
@@ -236,14 +235,13 @@ class ScoringEngine:
             return response.content[0].text.strip()
 
         if self._provider == "gemini" and self._gemini:
-            # google-generativeai no es nativamente async — usamos to_thread
-            response = await asyncio.to_thread(
-                self._gemini.generate_content,
-                prompt,
-                generation_config={
-                    "max_output_tokens": max_tokens,
-                    "response_mime_type": "application/json",
-                },
+            response = await self._gemini.aio.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=max_tokens,
+                    response_mime_type="application/json",
+                ),
             )
             return response.text.strip()
 
