@@ -26,7 +26,11 @@ services:
       N8N_HOST: localhost
       N8N_PORT: 5678
       WEBHOOK_URL: http://localhost:5678/
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       GRANTFLOW_API_URL: http://host.docker.internal:8000
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      GRANTFLOW_API_KEY: ${GRANTFLOW_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:
