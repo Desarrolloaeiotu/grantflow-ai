@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import re
+import xml.etree.ElementTree as ET
 from datetime import date, datetime
 from typing import Any
 
@@ -99,6 +100,10 @@ class NacionalColombiaScraper(BaseScraper):
             cajas_items = await self._fetch_cajas(client)
             all_items.extend(cajas_items)
 
+            # Fuente 5: RSS feeds y noticias de oportunidades de educación
+            rss_items = await self._fetch_news_feeds(client)
+            all_items.extend(rss_items)
+
         logger.info(
             "Nacional Colombia fetch complete",
             total=len(all_items),
@@ -106,6 +111,7 @@ class NacionalColombiaScraper(BaseScraper):
             mineducacion=len(min_items) if min_items else 0,
             secop=len(secop_items) if secop_items else 0,
             cajas=len(cajas_items) if cajas_items else 0,
+            rss=len(rss_items) if rss_items else 0,
         )
         return all_items
 
@@ -210,54 +216,66 @@ class NacionalColombiaScraper(BaseScraper):
     async def _fetch_secop(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
         """Busca en SECOP (Sistema Electrónico de Contratación Pública).
 
-        SECOP permite búsquedas de procesos de contratación pública.
-        Filtrar por educación inicial y primera infancia.
+        SECOP es la fuente oficial de contratos públicos en Colombia.
+        Busca procesos abiertos de contratación en educación inicial.
         """
         items = []
 
-        # Búsqueda en SECOP por palabras clave
+        # Búsqueda con múltiples términos para máxima cobertura
         search_terms = [
-            "educación inicial",
-            "primera infancia",
-            "formación docente",
-            "desarrollo infantil",
-            "CDI",
-            "jardín infantil",
+            ("educación inicial", "primary"),
+            ("primera infancia", "primary"),
+            ("CDI", "primary"),
+            ("formación docente", "secondary"),
+            ("desarrollo infantil", "secondary"),
+            ("acompañamiento pedagógico", "secondary"),
         ]
 
-        for term in search_terms:
-            url = "https://www.contratos.gov.co/consultar/buscador"
-            params = {
-                "buscador": term,
-                "estado": "Publicada",  # Solo procesos publicados
-                "pp": 50,  # 50 resultados por página
-            }
+        for term, priority in search_terms:
+            # Intentar múltiples endpoints SECOP
+            urls = [
+                "https://www.contratos.gov.co/consultar/buscador",
+                "https://www.contratos.gov.co/search",
+            ]
 
-            try:
-                resp = await client.get(url, params=params, timeout=15)
-                resp.raise_for_status()
-                soup = BeautifulSoup(resp.text, "lxml")
+            for base_url in urls:
+                params = {
+                    "buscador": term,
+                    "estado": "Publicada",
+                    "pp": 100,
+                }
 
-                # Buscar resultados con selectores amplios
-                results = soup.select(
-                    "div.resultado, div.result, tr.resultado, "
-                    ".proceso-item, .licitacion, a[href*='consultar']"
-                )
+                try:
+                    resp = await client.get(base_url, params=params, timeout=15)
+                    resp.raise_for_status()
+                    soup = BeautifulSoup(resp.text, "lxml")
 
-                page_items = 0
-                for result in results[:20]:
-                    # Extraer href y title
-                    link = result.select_one("a") if result.name != "a" else result
-                    if not link:
-                        continue
+                    # Selectores amplios para diferentes versiones de SECOP
+                    results = soup.select(
+                        "div.resultado, div.result, tr[data-id], "
+                        ".proceso-item, .licitacion-item, "
+                        "table tbody tr, .search-result"
+                    )
 
-                    href = link.get("href", "").strip()
-                    title_elem = result.select_one("h3, h4, .title") or link
-                    title = title_elem.get_text(strip=True) if title_elem else ""
+                    page_items = 0
+                    for result in results[:50]:
+                        # Extraer título y URL
+                        link = result.select_one("a[href*='consultar'], a[href*='process']") or result.select_one("a")
+                        if not link:
+                            continue
 
-                    if title and href and 10 <= len(title) <= 300:
-                        if not href.startswith("http"):
-                            href = "https://www.contratos.gov.co" + href if href.startswith("/") else "https://www.contratos.gov.co/" + href
+                        href = link.get("href", "").strip()
+                        title_elem = result.select_one("h3, h4, h5, .title, td:nth-child(1)") or link
+                        title = title_elem.get_text(strip=True) if title_elem else ""
+
+                        # Validar URL y título
+                        if not title or len(title) < 10:
+                            continue
+                        if not href or not href.startswith("http"):
+                            if href.startswith("/"):
+                                href = "https://www.contratos.gov.co" + href
+                            else:
+                                continue
 
                         items.append({
                             "title": title,
@@ -265,40 +283,56 @@ class NacionalColombiaScraper(BaseScraper):
                             "source": "secop",
                             "funder": "Entidad pública colombiana (SECOP)",
                             "search_term": term,
+                            "priority": priority,
                         })
                         page_items += 1
 
-                logger.info("SECOP search completed", term=term, results=page_items, total=len(items))
-            except httpx.HTTPError as exc:
-                logger.warning("SECOP search failed", term=term, error=str(exc))
-                continue
+                    if page_items > 0:
+                        logger.info("SECOP search completed", term=term, base_url=base_url, results=page_items, total=len(items))
+                        break  # Si encontró resultados en este endpoint, no probar el siguiente
+                except httpx.HTTPError as exc:
+                    logger.debug("SECOP endpoint failed", term=term, url=base_url, error=str(exc)[:100])
+                    continue
 
         return items
 
     async def _fetch_cajas(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
-        """Busca oportunidades de Cajas de Compensación y entidades afines."""
+        """Busca oportunidades y programas de Cajas de Compensación.
+
+        Cajas de compensación ofrecen programas de formación y educación
+        para sus afiliados, incluyendo primera infancia/jardinería.
+        """
         items = []
 
         cajas = [
             {
                 "name": "CAFAM",
                 "url": "https://www.cafam.com.co",
-                "paths": ["/oportunidades", "/programas", "/educacion"],
+                "paths": ["/servicios/educacion", "/programas/educacion", "/oportunidades", "/servicios"],
+                "keywords": ["educacion", "infantil", "jardin", "formacion"],
             },
             {
                 "name": "Caja Nariño",
                 "url": "https://www.cajanario.com.co",
-                "paths": ["/oportunidades", "/programas"],
+                "paths": ["/servicios", "/programas", "/oportunidades"],
+                "keywords": ["educacion", "infantil", "jardin"],
             },
             {
                 "name": "Caja Popular",
                 "url": "https://www.cajapopular.com.co",
-                "paths": ["/oportunidades", "/programas"],
+                "paths": ["/servicios", "/programas", "/educacion"],
+                "keywords": ["educacion", "infantil"],
+            },
+            {
+                "name": "Caja de Compensación Familiar Colombiana",
+                "url": "https://www.cafacol.com.co",
+                "paths": ["/servicios", "/programas"],
+                "keywords": ["educacion", "infantil"],
             },
         ]
 
         for caja in cajas:
-            paths = caja.get("paths", ["/programas", "/oportunidades"])
+            paths = caja.get("paths", ["/programas", "/servicios"])
 
             for search_path in paths:
                 try:
@@ -309,34 +343,148 @@ class NacionalColombiaScraper(BaseScraper):
                     resp.raise_for_status()
                     soup = BeautifulSoup(resp.text, "lxml")
 
-                    # Buscar enlaces con selectores amplios
+                    # Buscar enlaces de programas educativos
                     links = soup.select(
-                        "a[href*='programa'], a[href*='oportunidad'], "
-                        "a[href*='educacion'], a[href*='infantil'], "
-                        ".programa a, .oportunidad a, .card a, .item a"
+                        "a[href*='programa'], a[href*='servicio'], "
+                        "a[href*='educacion'], a[href*='infantil'], a[href*='jardin'], "
+                        ".programa a, .servicio a, .card a, .item a, "
+                        ".service-item a, .program-item a"
                     )
 
                     page_items = 0
-                    for link in links[:15]:
+                    for link in links[:20]:
                         href = link.get("href", "").strip()
                         title = link.get_text(strip=True)
 
-                        if href and title and 5 <= len(title) <= 300:
-                            if not href.startswith("http"):
-                                href = base_url + href if href.startswith("/") else base_url + "/" + href
+                        # Filtrar por relevancia
+                        if not href or not title or not (10 <= len(title) <= 300):
+                            continue
 
-                            items.append({
-                                "title": f"{caja['name']}: {title}",
-                                "url": href,
-                                "source": "caja",
-                                "funder": caja["name"],
-                            })
-                            page_items += 1
+                        # Validar que sea educación-relacionado
+                        title_lower = title.lower()
+                        has_edu_keyword = any(kw in title_lower for kw in caja.get("keywords", []))
+                        if not has_edu_keyword:
+                            continue
 
-                    logger.info("Caja page parsed", caja=caja["name"], path=search_path, links=page_items, total=len(items))
+                        # Normalizar URL
+                        if not href.startswith("http"):
+                            href = base_url + href if href.startswith("/") else base_url + "/" + href
+
+                        items.append({
+                            "title": title,
+                            "url": href,
+                            "source": "caja",
+                            "funder": caja["name"],
+                            "organization": caja["name"],
+                        })
+                        page_items += 1
+
+                    if page_items > 0:
+                        logger.info("Caja page parsed", caja=caja["name"], path=search_path, links=page_items, total=len(items))
                 except httpx.HTTPError as exc:
-                    logger.warning("Caja fetch failed", caja=caja["name"], path=search_path, error=str(exc))
+                    logger.warning("Caja fetch failed", caja=caja["name"], path=search_path, error=str(exc)[:100])
                     continue
+
+        return items
+
+    async def _fetch_news_feeds(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
+        """Busca en Google News y RSS feeds sobre educación inicial en Colombia.
+
+        Detecta anuncios públicos de convocatorias, programas y oportunidades
+        de financiamiento relacionadas con primera infancia.
+        """
+        items = []
+
+        # Google News search para educación inicial en Colombia
+        google_news_queries = [
+            "educación inicial colombia convocatoria 2026",
+            "primera infancia colombia llamado",
+            "jardines infantiles colombia financiamiento",
+            "formación docente colombia oportunidades",
+        ]
+
+        for query in google_news_queries:
+            try:
+                # Google News RSS feed
+                url = f"https://news.google.com/rss/search?q={query}"
+                resp = await client.get(url, timeout=15)
+                resp.raise_for_status()
+
+                try:
+                    root = ET.fromstring(resp.content)
+                    # Namespace para Google News
+                    ns = {"content": "http://purl.org/rss/1.0/modules/content/"}
+
+                    for item in root.findall(".//item")[:10]:
+                        title_elem = item.find("title")
+                        link_elem = item.find("link")
+                        desc_elem = item.find("description")
+
+                        if title_elem is not None and link_elem is not None:
+                            title = title_elem.text or ""
+                            link = link_elem.text or ""
+                            description = desc_elem.text or "" if desc_elem is not None else ""
+
+                            if title and link and len(title) > 10:
+                                items.append({
+                                    "title": title,
+                                    "url": link,
+                                    "source": "news",
+                                    "description": description[:500],
+                                    "funder": "Anuncio público (Google News)",
+                                    "search_query": query,
+                                })
+
+                    logger.info("Google News feed parsed", query=query, results=len(items))
+                except ET.ParseError as e:
+                    logger.debug("Could not parse RSS XML", error=str(e)[:100])
+                    continue
+
+            except httpx.HTTPError as exc:
+                logger.warning("Google News fetch failed", query=query, error=str(exc)[:100])
+                continue
+
+        # RSS feeds de instituciones colombianas
+        rss_feeds = [
+            ("https://www.icbf.gov.co/rss", "ICBF"),
+            ("https://www.mineducacion.gov.co/rss", "MinEducación"),
+        ]
+
+        for feed_url, source_name in rss_feeds:
+            try:
+                resp = await client.get(feed_url, timeout=15)
+                resp.raise_for_status()
+
+                try:
+                    root = ET.fromstring(resp.content)
+
+                    for item in root.findall(".//item")[:15]:
+                        title_elem = item.find("title")
+                        link_elem = item.find("link")
+                        desc_elem = item.find("description")
+
+                        if title_elem is not None and link_elem is not None:
+                            title = title_elem.text or ""
+                            link = link_elem.text or ""
+                            description = desc_elem.text or "" if desc_elem is not None else ""
+
+                            if title and link and len(title) > 10:
+                                items.append({
+                                    "title": title,
+                                    "url": link,
+                                    "source": "rss",
+                                    "description": description[:500],
+                                    "funder": source_name,
+                                })
+
+                    logger.info("RSS feed parsed", source=source_name, results=len(items))
+                except ET.ParseError:
+                    logger.debug("Could not parse RSS feed", source=source_name)
+                    continue
+
+            except httpx.HTTPError as exc:
+                logger.warning("RSS feed fetch failed", source=source_name, error=str(exc)[:100])
+                continue
 
         return items
 
