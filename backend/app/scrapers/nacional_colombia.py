@@ -104,6 +104,14 @@ class NacionalColombiaScraper(BaseScraper):
             rss_items = await self._fetch_news_feeds(client)
             all_items.extend(rss_items)
 
+            # Fuente 6: Universidades y centros de investigación
+            uni_items = await self._fetch_universities(client)
+            all_items.extend(uni_items)
+
+            # Fuente 7: Fundaciones y organismos de cooperación
+            foundation_items = await self._fetch_foundations(client)
+            all_items.extend(foundation_items)
+
         logger.info(
             "Nacional Colombia fetch complete",
             total=len(all_items),
@@ -112,6 +120,8 @@ class NacionalColombiaScraper(BaseScraper):
             secop=len(secop_items) if secop_items else 0,
             cajas=len(cajas_items) if cajas_items else 0,
             rss=len(rss_items) if rss_items else 0,
+            universities=len(uni_items) if uni_items else 0,
+            foundations=len(foundation_items) if foundation_items else 0,
         )
         return all_items
 
@@ -486,6 +496,176 @@ class NacionalColombiaScraper(BaseScraper):
                 logger.warning("RSS feed fetch failed", source=source_name, error=str(exc)[:100])
                 continue
 
+        return items
+
+    async def _fetch_universities(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
+        """Busca oportunidades en universidades colombianas de educación inicial.
+
+        Universidades con programas de educación inicial frecuentemente ofrecen
+        becas, diplomados y programas de investigación.
+        """
+        items = []
+
+        universities = [
+            {
+                "name": "Universidad de Antioquia",
+                "url": "https://www.udea.edu.co",
+                "keywords": ["educacion", "inicial", "infantil", "formacion"],
+            },
+            {
+                "name": "Pontificia Universidad Javeriana",
+                "url": "https://www.javeriana.edu.co",
+                "keywords": ["educacion", "inicial", "infantil", "posgrado"],
+            },
+            {
+                "name": "Universidad Nacional de Colombia",
+                "url": "https://nacional.edu.co",
+                "keywords": ["educacion", "inicial", "infantil", "investigacion"],
+            },
+            {
+                "name": "Universidad del Valle",
+                "url": "https://www.univalle.edu.co",
+                "keywords": ["educacion", "infantil", "diplomado"],
+            },
+        ]
+
+        for uni in universities:
+            try:
+                base_url = uni["url"].rstrip("/")
+                # Intentar múltiples rutas comunes
+                paths = [
+                    "/oferta-academica",
+                    "/programas",
+                    "/convocatorias",
+                    "/becas",
+                    "/investigacion",
+                    "/extension",
+                ]
+
+                for path in paths:
+                    full_url = base_url + path
+
+                    resp = await client.get(full_url, timeout=15)
+                    resp.raise_for_status()
+                    soup = BeautifulSoup(resp.text, "lxml")
+
+                    # Buscar enlaces de programas/oportunidades
+                    links = soup.select(
+                        "a[href*='programa'], a[href*='beca'], "
+                        "a[href*='diplomado'], a[href*='maestria'], "
+                        "a[href*='convocatoria'], a[href*='inscripcion'], "
+                        ".programa a, .beca a, .oferta a"
+                    )
+
+                    for link in links[:10]:
+                        href = link.get("href", "").strip()
+                        title = link.get_text(strip=True)
+
+                        # Validar relevancia
+                        title_lower = title.lower()
+                        has_keyword = any(kw in title_lower for kw in uni["keywords"])
+
+                        if href and title and 10 <= len(title) <= 300 and has_keyword:
+                            if not href.startswith("http"):
+                                href = base_url + href if href.startswith("/") else base_url + "/" + href
+
+                            items.append({
+                                "title": title,
+                                "url": href,
+                                "source": "universidad",
+                                "funder": uni["name"],
+                            })
+
+                    if len(items) > 0:
+                        break  # Si encontró en esta ruta, pasar a siguiente uni
+
+            except httpx.HTTPError as exc:
+                logger.debug("University fetch failed", uni=uni["name"], error=str(exc)[:100])
+                continue
+
+        if len(items) > 0:
+            logger.info("Universities scraped", results=len(items))
+        return items
+
+    async def _fetch_foundations(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
+        """Busca oportunidades en fundaciones y organismos de cooperación.
+
+        Fundaciones como Cargill, Hilton, GIZ, etc. frecuentemente publican
+        convocatorias para educación inicial en Colombia.
+        """
+        items = []
+
+        foundations = [
+            {
+                "name": "Fundación Cargill Colombia",
+                "url": "https://www.cargill.com/page/colombia-home",
+                "search_terms": ["educacion inicial", "formacion docente"],
+            },
+            {
+                "name": "Fundación Hilton para Hoteles",
+                "url": "https://www.hildonfoundation.org",
+                "search_terms": ["educacion", "infancia"],
+            },
+            {
+                "name": "GIZ Colombia",
+                "url": "https://www.giz.de/en/worldwide/31415.html",
+                "search_terms": ["educacion inicial", "primera infancia"],
+            },
+            {
+                "name": "Fundación FES (Foro por la Educación)",
+                "url": "https://www.fes.org.co",
+                "search_terms": ["educacion", "politica publica"],
+            },
+        ]
+
+        for foundation in foundations:
+            try:
+                base_url = foundation["url"].rstrip("/")
+                paths = [
+                    "/proyectos",
+                    "/programas",
+                    "/convocatorias",
+                    "/oportunidades",
+                    "/noticias",
+                ]
+
+                for path in paths:
+                    full_url = base_url + path
+
+                    resp = await client.get(full_url, timeout=15)
+                    resp.raise_for_status()
+                    soup = BeautifulSoup(resp.text, "lxml")
+
+                    links = soup.select(
+                        "a[href*='proyecto'], a[href*='programa'], "
+                        "a[href*='convocatoria'], a[href*='oportunidad'], "
+                        ".proyecto a, .programa a, .news a, article a"
+                    )
+
+                    for link in links[:8]:
+                        href = link.get("href", "").strip()
+                        title = link.get_text(strip=True)
+
+                        if href and title and 10 <= len(title) <= 300:
+                            if not href.startswith("http"):
+                                href = base_url + href if href.startswith("/") else base_url + "/" + href
+
+                            items.append({
+                                "title": title,
+                                "url": href,
+                                "source": "fundacion",
+                                "funder": foundation["name"],
+                            })
+
+                    if len(items) > 0:
+                        break
+
+            except httpx.HTTPError as exc:
+                logger.debug("Foundation fetch failed", foundation=foundation["name"], error=str(exc)[:100])
+                continue
+
+        if len(items) > 0:
+            logger.info("Foundations scraped", results=len(items))
         return items
 
     def normalize(self, raw: dict[str, Any]) -> OpportunityCreate | None:
