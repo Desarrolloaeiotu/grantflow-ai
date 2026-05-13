@@ -23,6 +23,7 @@ from app.scrapers.base import ScraperError
 from app.scrapers.bid import BidScraper
 from app.scrapers.developmentaid import DevelopmentAidScraper
 from app.scrapers.grantsgov import GrantsGovScraper
+from app.scrapers.nacional_colombia import NacionalColombiaScraper
 from app.scrapers.rss_feeds import RssFeedsScraper
 from app.scrapers.unwomen import UnWomenScraper
 from app.services.scoring_engine import ScoringEngine
@@ -30,6 +31,7 @@ from app.services.scoring_engine import ScoringEngine
 logger = structlog.get_logger()
 
 SCRAPERS = {
+    "nacional_colombia": NacionalColombiaScraper,  # 5am — prioridad nacional
     "grantsgov": GrantsGovScraper,
     "bid": BidScraper,
     "unwomen": UnWomenScraper,
