@@ -1,6 +1,7 @@
 """Endpoints para disparar scrapers desde n8n u otros sistemas externos."""
 
 from datetime import datetime, timezone
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, Header, HTTPException, Query
@@ -88,3 +89,81 @@ async def list_sources(
     """Lista los scrapers disponibles para invocar."""
     _check_api_key(x_api_key)
     return {"sources": list(SCRAPERS.keys())}
+
+
+@router.get("/diagnose")
+async def diagnose_scraper(
+    source: str = Query("nacional_colombia", description="Scraper a diagnosticar"),
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
+) -> dict[str, Any]:
+    """Diagnostica un scraper: ejecuta sin persistir, devuelve debug info.
+
+    Útil para verificar si el scraper está encontrando oportunidades
+    sin necesidad de afectar la base de datos.
+
+    Uso: GET /api/v1/scrape/diagnose?source=nacional_colombia
+    """
+    _check_api_key(x_api_key)
+
+    if source not in SCRAPERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown scraper '{source}'. Valid: {list(SCRAPERS.keys())}",
+        )
+
+    started_at = datetime.now(timezone.utc)
+    scraper_cls = SCRAPERS[source]
+    scraper = scraper_cls()
+
+    try:
+        raw_items = await scraper.fetch_raw()
+        logger.info(
+            "Diagnose: fetch_raw complete",
+            scraper=source,
+            raw_items=len(raw_items),
+        )
+
+        # Normalizar cada item para ver cuáles pasan el filtro
+        normalized = []
+        rejected = []
+
+        for i, raw in enumerate(raw_items):
+            normalized_opp = scraper.normalize(raw)
+            if normalized_opp:
+                normalized.append({
+                    "title": normalized_opp.title,
+                    "funder": normalized_opp.funder_name,
+                    "url": normalized_opp.url_rfp,
+                    "deadline": str(normalized_opp.deadline) if normalized_opp.deadline else None,
+                })
+            else:
+                rejected.append({
+                    "title": raw.get("title", "N/A")[:80],
+                    "reason": "Failed normalization filter",
+                })
+
+        completed_at = datetime.now(timezone.utc)
+        duration_sec = (completed_at - started_at).total_seconds()
+
+        return {
+            "scraper": source,
+            "status": "success",
+            "raw_fetched": len(raw_items),
+            "normalized_valid": len(normalized),
+            "rejected": len(rejected),
+            "normalized_sample": normalized[:5],  # Primeros 5 válidos
+            "rejected_sample": rejected[:5],  # Primeros 5 rechazados
+            "duration_sec": duration_sec,
+            "started_at": started_at.isoformat(),
+            "completed_at": completed_at.isoformat(),
+            "note": "No data persisted to database. This is diagnostic only.",
+        }
+
+    except Exception as exc:
+        logger.error("Diagnose failed", scraper=source, error=str(exc))
+        return {
+            "scraper": source,
+            "status": "error",
+            "error": str(exc)[:500],
+            "duration_sec": (datetime.now(timezone.utc) - started_at).total_seconds(),
+        }
