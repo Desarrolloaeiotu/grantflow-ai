@@ -123,15 +123,21 @@ class NacionalColombiaScraper(BaseScraper):
                 resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, "lxml")
 
-                # Buscar enlaces a convocatorias
-                links = soup.select("a[href*='convocatoria'], a[href*='llamado']")
-                for link in links[:20]:  # Cap para no abusar
-                    href = link.get("href", "")
+                # Buscar enlaces a convocatorias con selectores más amplios
+                links = soup.select(
+                    "a[href*='convocatoria'], a[href*='llamado'], "
+                    "a[href*='oportunidad'], div.resultado a, article a, "
+                    ".oportunidad a, .convocatoria a"
+                )
+
+                page_items = 0
+                for link in links[:30]:  # Cap para no abusar
+                    href = link.get("href", "").strip()
                     title = link.get_text(strip=True)
 
-                    if href and title and len(title) > 10:
-                        if href.startswith("/"):
-                            href = "https://www.icbf.gov.co" + href
+                    if href and title and 10 <= len(title) <= 300:  # Rango realista
+                        if not href.startswith("http"):
+                            href = "https://www.icbf.gov.co" + href if href.startswith("/") else "https://www.icbf.gov.co/" + href
 
                         items.append({
                             "title": title,
@@ -139,8 +145,9 @@ class NacionalColombiaScraper(BaseScraper):
                             "source": "icbf",
                             "funder": "Instituto Colombiano de Bienestar Familiar (ICBF)",
                         })
+                        page_items += 1
 
-                logger.info("ICBF page parsed", url=url, links_found=len(items))
+                logger.info("ICBF page parsed", url=url, links_found=page_items, total=len(items))
             except httpx.HTTPError as exc:
                 logger.warning("ICBF fetch failed", url=url, error=str(exc))
                 continue
@@ -153,6 +160,7 @@ class NacionalColombiaScraper(BaseScraper):
         urls = [
             "https://www.mineducacion.gov.co/portal/",
             "https://www.mineducacion.gov.co/convocatorias",
+            "https://www.mineducacion.gov.co/node",
         ]
 
         for url in urls:
@@ -161,21 +169,21 @@ class NacionalColombiaScraper(BaseScraper):
                 resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, "lxml")
 
-                # Buscar enlaces relevantes
+                # Buscar enlaces con selectores amplios
                 links = soup.select(
                     "a[href*='convocatoria'], a[href*='llamado'], "
-                    "a[href*='oportunidad'], a[href*='financiamiento']"
+                    "a[href*='oportunidad'], a[href*='financiamiento'], "
+                    "div.node a, .content a, article a, .post a"
                 )
 
-                for link in links[:20]:
-                    href = link.get("href", "")
+                page_items = 0
+                for link in links[:30]:
+                    href = link.get("href", "").strip()
                     title = link.get_text(strip=True)
 
-                    if href and title and len(title) > 10:
-                        if href.startswith("/"):
-                            href = "https://www.mineducacion.gov.co" + href
-                        elif not href.startswith("http"):
-                            continue
+                    if href and title and 10 <= len(title) <= 300:
+                        if not href.startswith("http"):
+                            href = "https://www.mineducacion.gov.co" + href if href.startswith("/") else "https://www.mineducacion.gov.co/" + href
 
                         items.append({
                             "title": title,
@@ -183,8 +191,9 @@ class NacionalColombiaScraper(BaseScraper):
                             "source": "mineducacion",
                             "funder": "Ministerio de Educación Nacional",
                         })
+                        page_items += 1
 
-                logger.info("MinEducación page parsed", url=url, links_found=len(items))
+                logger.info("MinEducación page parsed", url=url, links_found=page_items, total=len(items))
             except httpx.HTTPError as exc:
                 logger.warning("MinEducación fetch failed", url=url, error=str(exc))
                 continue
@@ -205,14 +214,15 @@ class NacionalColombiaScraper(BaseScraper):
             "primera infancia",
             "formación docente",
             "desarrollo infantil",
+            "CDI",
+            "jardín infantil",
         ]
 
         for term in search_terms:
-            url = f"https://www.contratos.gov.co/consultar/buscador"
+            url = "https://www.contratos.gov.co/consultar/buscador"
             params = {
                 "buscador": term,
                 "estado": "Publicada",  # Solo procesos publicados
-                "tipo": "convocatoria",
                 "pp": 50,  # 50 resultados por página
             }
 
@@ -221,24 +231,26 @@ class NacionalColombiaScraper(BaseScraper):
                 resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, "lxml")
 
-                # Buscar resultados de búsqueda (estructura puede variar)
+                # Buscar resultados con selectores amplios
                 results = soup.select(
-                    "div.resultado, div.result, tr[data-href], a[href*='consultar']"
+                    "div.resultado, div.result, tr.resultado, "
+                    ".proceso-item, .licitacion, a[href*='consultar']"
                 )
 
-                for result in results[:15]:
-                    title_elem = result.select_one("h3, h4, td:first-child, .title")
-                    if not title_elem:
+                page_items = 0
+                for result in results[:20]:
+                    # Extraer href y title
+                    link = result.select_one("a") if result.name != "a" else result
+                    if not link:
                         continue
 
-                    title = title_elem.get_text(strip=True)
-                    href = result.get("href") or result.select_one("a")
-                    if href:
-                        href = href.get("href", "")
+                    href = link.get("href", "").strip()
+                    title_elem = result.select_one("h3, h4, .title") or link
+                    title = title_elem.get_text(strip=True) if title_elem else ""
 
-                    if title and href and len(title) > 10:
-                        if href.startswith("/"):
-                            href = "https://www.contratos.gov.co" + href
+                    if title and href and 10 <= len(title) <= 300:
+                        if not href.startswith("http"):
+                            href = "https://www.contratos.gov.co" + href if href.startswith("/") else "https://www.contratos.gov.co/" + href
 
                         items.append({
                             "title": title,
@@ -247,8 +259,9 @@ class NacionalColombiaScraper(BaseScraper):
                             "funder": "Entidad pública colombiana (SECOP)",
                             "search_term": term,
                         })
+                        page_items += 1
 
-                logger.info("SECOP search completed", term=term, results=len(items))
+                logger.info("SECOP search completed", term=term, results=page_items, total=len(items))
             except httpx.HTTPError as exc:
                 logger.warning("SECOP search failed", term=term, error=str(exc))
                 continue
@@ -262,56 +275,61 @@ class NacionalColombiaScraper(BaseScraper):
         cajas = [
             {
                 "name": "CAFAM",
-                "url": "https://www.cafam.com.co/",
-                "search_path": "/oportunidades",
+                "url": "https://www.cafam.com.co",
+                "paths": ["/oportunidades", "/programas", "/educacion"],
             },
             {
                 "name": "Caja Nariño",
-                "url": "https://www.cajanario.com.co/",
+                "url": "https://www.cajanario.com.co",
+                "paths": ["/oportunidades", "/programas"],
             },
             {
                 "name": "Caja Popular",
-                "url": "https://www.cajapopular.com.co/",
+                "url": "https://www.cajapopular.com.co",
+                "paths": ["/oportunidades", "/programas"],
             },
         ]
 
         for caja in cajas:
-            try:
-                base_url = caja["url"]
-                search_path = caja.get("search_path", "/programas")
-                full_url = base_url.rstrip("/") + search_path
+            paths = caja.get("paths", ["/programas", "/oportunidades"])
 
-                resp = await client.get(full_url, timeout=15)
-                resp.raise_for_status()
-                soup = BeautifulSoup(resp.text, "lxml")
+            for search_path in paths:
+                try:
+                    base_url = caja["url"].rstrip("/")
+                    full_url = base_url + search_path
 
-                # Buscar enlaces relevantes
-                links = soup.select(
-                    "a[href*='programa'], a[href*='oportunidad'], "
-                    "a[href*='educacion'], a[href*='infantil']"
-                )
+                    resp = await client.get(full_url, timeout=15)
+                    resp.raise_for_status()
+                    soup = BeautifulSoup(resp.text, "lxml")
 
-                for link in links[:10]:
-                    href = link.get("href", "")
-                    title = link.get_text(strip=True)
+                    # Buscar enlaces con selectores amplios
+                    links = soup.select(
+                        "a[href*='programa'], a[href*='oportunidad'], "
+                        "a[href*='educacion'], a[href*='infantil'], "
+                        ".programa a, .oportunidad a, .card a, .item a"
+                    )
 
-                    if href and title and len(title) > 5:
-                        if href.startswith("/"):
-                            href = base_url.rstrip("/") + href
-                        elif not href.startswith("http"):
-                            href = base_url + href
+                    page_items = 0
+                    for link in links[:15]:
+                        href = link.get("href", "").strip()
+                        title = link.get_text(strip=True)
 
-                        items.append({
-                            "title": f"{caja['name']}: {title}",
-                            "url": href,
-                            "source": "caja",
-                            "funder": caja["name"],
-                        })
+                        if href and title and 5 <= len(title) <= 300:
+                            if not href.startswith("http"):
+                                href = base_url + href if href.startswith("/") else base_url + "/" + href
 
-                logger.info("Caja page parsed", caja=caja["name"], links=len(items))
-            except httpx.HTTPError as exc:
-                logger.warning("Caja fetch failed", caja=caja["name"], error=str(exc))
-                continue
+                            items.append({
+                                "title": f"{caja['name']}: {title}",
+                                "url": href,
+                                "source": "caja",
+                                "funder": caja["name"],
+                            })
+                            page_items += 1
+
+                    logger.info("Caja page parsed", caja=caja["name"], path=search_path, links=page_items, total=len(items))
+                except httpx.HTTPError as exc:
+                    logger.warning("Caja fetch failed", caja=caja["name"], path=search_path, error=str(exc))
+                    continue
 
         return items
 
@@ -331,11 +349,19 @@ class NacionalColombiaScraper(BaseScraper):
         # Buscar descripción en la página (opcional)
         description = raw.get("description", "")
 
-        # Filtrar por palabras clave — REQUERIDO
+        # Filtro flexible de palabras clave para Nacional Colombia
+        # Ya confía en las fuentes (ICBF, MinEducación, SECOP, Cajas)
+        # Pero rechaza resultados claramente no relevantes
         haystack = (title + " " + description).lower()
-        if not any(kw in haystack for kw in NACIONAL_KEYWORDS):
-            logger.debug("Nacional opp skipped", title=title, reason="no_keywords")
+        reject_keywords = ("error", "404", "no encontrado", "página no disponible")
+        if any(kw in haystack for kw in reject_keywords):
+            logger.debug("Nacional opp rejected", title=title, reason="rejection_keyword")
             return None
+
+        # Bonus si contiene palabras clave de educación inicial
+        has_keyword = any(kw in haystack for kw in NACIONAL_KEYWORDS)
+        if not has_keyword:
+            logger.debug("Nacional opp included (no explicit keyword, but from trusted source)", title=title[:60])
 
         # Parseear deadline si existe (formato flexible)
         deadline = self._parse_deadline(raw.get("deadline_text"))
