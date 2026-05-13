@@ -110,7 +110,7 @@ class NacionalColombiaScraper(BaseScraper):
         return all_items
 
     async def _fetch_icbf(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
-        """Busca convocatorias del ICBF."""
+        """Busca convocatorias del ICBF enfocadas en primera infancia."""
         items = []
         urls = [
             "https://www.icbf.gov.co/convocatorias",
@@ -123,19 +123,24 @@ class NacionalColombiaScraper(BaseScraper):
                 resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, "lxml")
 
-                # Buscar enlaces a convocatorias con selectores más amplios
+                # Buscar enlaces más relevantes (evitar CNSC/selección personal)
                 links = soup.select(
-                    "a[href*='convocatoria'], a[href*='llamado'], "
-                    "a[href*='oportunidad'], div.resultado a, article a, "
-                    ".oportunidad a, .convocatoria a"
+                    "a[href*='llamado'], a[href*='oportunidad'], "
+                    "a[href*='financ'], a[href*='subsidio'], "
+                    "a[href*='primera'], a[href*='infantil'], "
+                    "article a, .content a, .node a"
                 )
 
                 page_items = 0
-                for link in links[:30]:  # Cap para no abusar
+                for link in links[:30]:
                     href = link.get("href", "").strip()
                     title = link.get_text(strip=True)
 
-                    if href and title and 10 <= len(title) <= 300:  # Rango realista
+                    # Evitar links de selección personal / CNSC
+                    if "cnsc" in href.lower() or "seleccion" in href.lower():
+                        continue
+
+                    if href and title and 10 <= len(title) <= 300:
                         if not href.startswith("http"):
                             href = "https://www.icbf.gov.co" + href if href.startswith("/") else "https://www.icbf.gov.co/" + href
 
@@ -155,7 +160,7 @@ class NacionalColombiaScraper(BaseScraper):
         return items
 
     async def _fetch_mineducacion(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
-        """Busca convocatorias del Ministerio de Educación Nacional."""
+        """Busca convocatorias del Ministerio de Educación Nacional para primera infancia."""
         items = []
         urls = [
             "https://www.mineducacion.gov.co/portal/",
@@ -169,11 +174,13 @@ class NacionalColombiaScraper(BaseScraper):
                 resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, "lxml")
 
-                # Buscar enlaces con selectores amplios
+                # Buscar enlaces de oportunidades/llamados (evitar contenido genérico)
                 links = soup.select(
-                    "a[href*='convocatoria'], a[href*='llamado'], "
-                    "a[href*='oportunidad'], a[href*='financiamiento'], "
-                    "div.node a, .content a, article a, .post a"
+                    "a[href*='llamado'], a[href*='oportunidad'], "
+                    "a[href*='convocatoria'], a[href*='financ'], "
+                    "a[href*='primera'], a[href*='infantil'], "
+                    "a[href*='preescolar'], a[href*='cdi'], "
+                    "div.node a, .content a, article a"
                 )
 
                 page_items = 0
@@ -336,7 +343,7 @@ class NacionalColombiaScraper(BaseScraper):
     def normalize(self, raw: dict[str, Any]) -> OpportunityCreate | None:
         """Convierte registro crudo a OpportunityCreate.
 
-        Filtra por palabras clave nacionales para asegurar relevancia.
+        Filtra por relevancia a primera infancia/educación inicial.
         """
         title = raw.get("title", "").strip()
         if not title or len(title) < 10:
@@ -349,19 +356,25 @@ class NacionalColombiaScraper(BaseScraper):
         # Buscar descripción en la página (opcional)
         description = raw.get("description", "")
 
-        # Filtro flexible de palabras clave para Nacional Colombia
-        # Ya confía en las fuentes (ICBF, MinEducación, SECOP, Cajas)
-        # Pero rechaza resultados claramente no relevantes
-        haystack = (title + " " + description).lower()
-        reject_keywords = ("error", "404", "no encontrado", "página no disponible")
+        # Filtro de relevancia: REQUERIDO contener al menos una palabra clave
+        haystack = (title + " " + url + " " + description).lower()
+
+        # Rechazar explícitamente si contiene palabras de selección/RRHH
+        reject_keywords = (
+            "seleccion", "personal", "cnsc", "rrhh", "empleo",
+            "vacante", "puesto", "candidato", "cv",
+            "error", "404", "no encontrado"
+        )
         if any(kw in haystack for kw in reject_keywords):
-            logger.debug("Nacional opp rejected", title=title, reason="rejection_keyword")
+            logger.debug("Nacional opp rejected", title=title[:60], reason="reject_keyword")
             return None
 
-        # Bonus si contiene palabras clave de educación inicial
-        has_keyword = any(kw in haystack for kw in NACIONAL_KEYWORDS)
-        if not has_keyword:
-            logger.debug("Nacional opp included (no explicit keyword, but from trusted source)", title=title[:60])
+        # REQUERIDO: contener al menos una palabra clave positiva
+        if not any(kw in haystack for kw in NACIONAL_KEYWORDS):
+            logger.debug("Nacional opp rejected", title=title[:60], reason="no_positive_keyword")
+            return None
+
+        logger.debug("Nacional opp accepted", title=title[:60])
 
         # Parseear deadline si existe (formato flexible)
         deadline = self._parse_deadline(raw.get("deadline_text"))
