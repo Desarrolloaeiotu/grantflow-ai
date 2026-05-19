@@ -646,10 +646,11 @@ Responde SOLO en JSON:
 
 ## 6. Scrapers — fuentes de datos
 
-### Fuentes activas en MVP (mes 1–4)
+### Fuentes activas en MVP (mes 1–5)
 
-| Scraper | URL base | Método | Schedule | Prioridad |
+| Scraper | URL base / Fuentes | Método | Schedule | Prioridad |
 |---------|----------|--------|----------|-----------|
+| `nacional_colombia.py` ⭐ S5 | ICBF, MinEducación, SECOP, Cajas | Scraping HTML + búsqueda | Diario 5am | **MÁX** |
 | `grantsgov.py` | api.grants.gov/v1/api/search2 | REST API | Diario 6am | Alta |
 | `bid.py` | iadb.org/es/oportunidades | Scraping HTML | Diario 7am | Alta |
 | `unwomen.py` | unwomen.org/grants | Scraping HTML | Diario 8am | Alta |
@@ -687,19 +688,50 @@ class BaseScraper(ABC):
     #   eligible_countries, sectors, raw_content)
 ```
 
-### Keywords de filtro para grants relevantes
+### Keywords de filtro — Refactorización S5+ (mayo 2026)
+
+**CAMBIO CRÍTICO:** Todos los scrapers fueron refocalizados con lógica AND estricta (CORE_KEYWORDS + GEO_KEYWORDS).
+
+#### Palabras clave CORE (al menos 1 debe estar presente):
 ```python
-RELEVANT_KEYWORDS = [
-    # Inglés
-    "early childhood", "ECD", "early education", "preschool", "kindergarten",
-    "child development", "teachers training", "education policy", "latin america",
-    "colombia", "scalable model", "replication", "capacity building",
-    # Español
-    "primera infancia", "educación inicial", "desarrollo infantil", "preescolar",
-    "formación docente", "política educativa", "latinoamérica", "colombia",
-    "modelo escalable", "transferencia", "fortalecimiento de capacidades"
+CORE_KEYWORDS = [
+    # Primera infancia / ECD
+    "early childhood", "ecd", "early childhood development",
+    "preschool", "preescolar", "educación inicial", "primera infancia",
+    "desarrollo infantil temprano", "cero a siempre",
+    # Economía del cuidado
+    "care economy", "economía del cuidado", "trabajo de cuidado",
+    # Empoderamiento femenino
+    "women empowerment", "empoderamiento femenino", "gender equality",
+    # Formación de líderes educativos
+    "teacher training", "formación docente", "acompañamiento pedagógico",
+    # MEAL / Gestión del conocimiento
+    "monitoring evaluation", "monitoreo y evaluación", "sistematización",
+    # Trayectorias educativas
+    "educational trajectories", "continuidad educativa",
+    # Transformación sistémica
+    "systemic change", "modelo escalable", "transferencia de modelo",
 ]
 ```
+
+#### Palabras clave GEO (al menos 1 debe estar presente):
+```python
+GEO_KEYWORDS = [
+    "colombia", "latinoamérica", "latin america", "latam",
+    "región andina", "global south",
+]
+```
+
+**Lógica:** `has_core AND has_geo → ACCEPT | REJECT`
+
+**Cambios por scraper:**
+- ✅ `grantsgov.py`: nuevos SEARCH_TERMS + AND filter
+- ✅ `bid.py`, `unwomen.py`, `developmentaid.py`: refocalizados
+- ✅ `rss_feeds.py`: eliminado `reliefweb_jobs`, 20 feeds -> 19 feeds
+- ✅ `nacional_colombia.py`: reforzado con 6 nuevos temas
+
+**BD limpiada:** mayo 19 — 958 oportunidades borradas, lista para scraping limpio.
+**Diseño:** Refactorización CSS (dark → gris perla/plata, Bloomberg style)
 
 ---
 
@@ -916,12 +948,12 @@ Antes de declarar cualquier módulo como completado:
 
 | Sprint | Semanas | Foco | Estado |
 |--------|---------|------|--------|
-| S1 | 1–2 | Setup, Dataverse/Supabase, primer scraper Grants.gov | ⬜ Pendiente |
-| S2 | 3–4 | Scrapers BID, ONU, DevelopmentAid, RSS. n8n schedule | ⬜ Pendiente |
-| S3 | 5–6 | Embeddings Gemini, pgvector, clasificación LLM | ⬜ Pendiente |
-| S4 | 7–8 | Motor de scoring 5 criterios. Alertas Teams/Slack | ⬜ Pendiente |
-| S5 | 9–10 | Apollo.io contactos. Frontend Next.js v1 | ⬜ Pendiente |
-| S6 | 11–12 | Dashboard Metabase. Exportación CSV para CRM | ⬜ Pendiente |
+| S1 | 1–2 | Setup, Dataverse/Supabase, primer scraper Grants.gov | ✅ Completado |
+| S2 | 3–4 | Scrapers BID, ONU, DevelopmentAid, RSS. n8n schedule | ✅ Completado |
+| S3 | 5–6 | Embeddings Gemini, pgvector, clasificación LLM | ✅ Completado |
+| S4 | 7–8 | Motor de scoring 5 criterios. Alertas Teams/Slack | ✅ Completado (Resend Email pendiente) |
+| S5 | 9–10 | Apollo.io contactos. Frontend Next.js v1 | ✅ **COMPLETADO 12 mayo 2026** |
+| S6 | 11–12 | Dashboard Metabase. Exportación CSV para CRM | ⬜ En cola |
 | S7 | 13–14 | QA con datos reales. Ajuste scoring con equipo | ⬜ Pendiente |
 | S8 | 15–16 | Onboarding. Documentación. Lanzamiento MVP | ⬜ Pendiente |
 

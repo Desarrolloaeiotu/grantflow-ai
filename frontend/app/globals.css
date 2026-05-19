@@ -3,27 +3,27 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:        #07090F;
-  --bg2:       #0D1017;
-  --bg3:       #131720;
-  --bg4:       #1A2030;
-  --border:    rgba(255,255,255,0.07);
-  --border2:   rgba(255,255,255,0.13);
-  --text:      #E8E4D9;
-  --muted:     #6B7280;
-  --muted2:    #9CA3AF;
-  --go:        #22D3A0;
-  --go-bg:     rgba(34,211,160,0.10);
-  --go-bdr:    rgba(34,211,160,0.25);
-  --nogo:      #F87171;
-  --nogo-bg:   rgba(248,113,113,0.10);
-  --amber:     #FBBF24;
-  --amber-bg:  rgba(251,191,36,0.10);
-  --blue:      #60A5FA;
-  --blue-bg:   rgba(96,165,250,0.10);
-  --violet:    #A78BFA;
-  --violet-bg: rgba(167,139,250,0.10);
-  --accent:    #22D3A0;
+  --bg:        #F5F6F8;
+  --bg2:       #FFFFFF;
+  --bg3:       #EFF1F5;
+  --bg4:       #E2E8F0;
+  --border:    rgba(15,23,42,0.08);
+  --border2:   rgba(15,23,42,0.15);
+  --text:      #0F172A;
+  --muted:     #64748B;
+  --muted2:    #94A3B8;
+  --go:        #059669;
+  --go-bg:     rgba(5,150,105,0.08);
+  --go-bdr:    rgba(5,150,105,0.2);
+  --nogo:      #DC2626;
+  --nogo-bg:   rgba(220,38,38,0.08);
+  --amber:     #D97706;
+  --amber-bg:  rgba(217,119,6,0.08);
+  --blue:      #2563EB;
+  --blue-bg:   rgba(37,99,235,0.08);
+  --violet:    #7C3AED;
+  --violet-bg: rgba(124,58,237,0.08);
+  --accent:    #059669;
   --serif:     'Instrument Serif', Georgia, serif;
   --mono:      'DM Mono', monospace;
   --sans:      'Syne', system-ui, sans-serif;
@@ -55,6 +55,7 @@ a { text-decoration: none; }
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  box-shadow: 1px 0 2px rgba(0,0,0,0.04);
 }
 
 .brand {
@@ -153,7 +154,8 @@ a { text-decoration: none; }
   padding: 0 24px;
   gap: 12px;
   flex-shrink: 0;
-  background: var(--bg);
+  background: var(--bg2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 .topbar-title {
   font-family: var(--serif);
@@ -258,11 +260,12 @@ a { text-decoration: none; }
   border-radius: var(--r-lg);
   padding: 16px 18px;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.15s;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
-.opp-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+.opp-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 .opp-card.go-card   { border-left: 3px solid var(--go); }
 .opp-card.nogo-card { border-left: 3px solid var(--nogo); opacity: 0.65; }
 .opp-card.pend-card { border-left: 3px solid var(--amber); }
@@ -537,9 +540,9 @@ a { text-decoration: none; }
 .alert-days  { font-family: var(--mono); font-size: 13px; font-weight: 500; flex-shrink: 0; }
 
 /* ── Scrollbar ────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
 /* ── Fade in ──────────────────────────────────────────────── */
 .page { animation: fadein 0.2s ease; }

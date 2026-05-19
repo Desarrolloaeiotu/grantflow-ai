@@ -28,12 +28,22 @@ UNWOMEN_PAGES = (
     "https://www.unwomen.org/en/news-stories?type=announcement",
 )
 
-RELEVANT_KEYWORDS = (
-    "early childhood", "ecd", "education", "child", "primera infancia",
-    "educación inicial", "infancia", "niñez",
-    "gender", "género", "women", "mujeres",
-    "latin america", "latinoamérica", "colombia",
-    "capacity building", "fortalecimiento",
+CORE_KEYWORDS = (
+    # Primera infancia
+    "early childhood", "ecd", "primera infancia", "educación inicial",
+    # Empoderamiento femenino + género
+    "gender equality", "women empowerment", "mujeres", "género",
+    "empoderamiento femenino", "women leadership", "agencia femenina",
+    # Formación de líderes
+    "teacher training", "formación docente", "educational leadership",
+    # MEAL
+    "monitoring evaluation", "sistematización", "monitoreo y evaluación",
+    # Economía del cuidado
+    "care economy", "economía del cuidado",
+)
+
+GEO_KEYWORDS = (
+    "latin america", "latinoamérica", "colombia", "región andina",
 )
 
 USER_AGENT = "Mozilla/5.0 (compatible; GrantFlow-AI/1.0; +https://aeiotu.org)"
@@ -119,7 +129,11 @@ class UnWomenScraper(BaseScraper):
 
         description = raw.get("description") or raw.get("snippet", "")
         haystack = (title + " " + description).lower()
-        if not any(kw in haystack for kw in RELEVANT_KEYWORDS):
+
+        # Filtro AND: al menos 1 CORE + al menos 1 GEO
+        has_core = any(kw.lower() in haystack for kw in CORE_KEYWORDS)
+        has_geo = any(kw.lower() in haystack for kw in GEO_KEYWORDS)
+        if not (has_core and has_geo):
             return None
 
         deadline = _parse_deadline(raw.get("deadline_text"))

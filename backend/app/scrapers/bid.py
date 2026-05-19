@@ -32,12 +32,26 @@ BID_LIST_PAGES = (
     "https://bidlab.org/en/calls-for-proposals",
 )
 
-# Keywords de relevancia
-RELEVANT_KEYWORDS = (
-    "primera infancia", "educación", "infancia", "niñez", "desarrollo infantil",
-    "early childhood", "ecd", "education", "child", "youth",
-    "latin america", "latinoamérica", "colombia", "andina",
-    "innovación social", "social innovation", "transferencia",
+# Keywords HIGH SPECIFICITY
+CORE_KEYWORDS = (
+    # Primera infancia / ECD
+    "primera infancia", "educación inicial", "desarrollo infantil",
+    "early childhood", "ecd", "early childhood development",
+    "preschool", "cero a siempre",
+    # Economía del cuidado
+    "economía del cuidado", "care economy",
+    # Empoderamiento femenino
+    "empoderamiento femenino", "women empowerment", "gender equality",
+    # Formación de líderes educativos
+    "formación docente", "teacher training", "acompañamiento pedagógico",
+    # MEAL
+    "monitoreo y evaluación", "monitoring evaluation", "sistematización",
+    # Transformación sistémica
+    "modelo escalable", "transferencia", "incidencia política",
+)
+
+GEO_KEYWORDS = (
+    "colombia", "latinoamérica", "latin america", "región andina",
 )
 
 USER_AGENT = "Mozilla/5.0 (compatible; GrantFlow-AI/1.0; +https://aeiotu.org)"
@@ -130,7 +144,11 @@ class BidScraper(BaseScraper):
 
         description: str = raw.get("description", "")
         haystack = (title + " " + description).lower()
-        if not any(kw in haystack for kw in RELEVANT_KEYWORDS):
+
+        # Filtro AND: al menos 1 CORE + al menos 1 GEO
+        has_core = any(kw.lower() in haystack for kw in CORE_KEYWORDS)
+        has_geo = any(kw.lower() in haystack for kw in GEO_KEYWORDS)
+        if not (has_core and has_geo):
             return None
 
         deadline = _parse_deadline(raw.get("deadline_text"))

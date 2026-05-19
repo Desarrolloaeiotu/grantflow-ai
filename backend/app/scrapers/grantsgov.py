@@ -16,36 +16,53 @@ from app.scrapers.base import BaseScraper, ScraperError
 
 logger = structlog.get_logger()
 
-# Keywords relevantes para aeioTU — filtro de primera pasada
-RELEVANT_KEYWORDS = [
-    "early childhood", "ECD", "early education", "preschool", "kindergarten",
-    "child development", "teacher training", "education policy", "latin america",
-    "colombia", "scalable model", "replication", "capacity building",
-    "primera infancia", "educación inicial", "desarrollo infantil",
-    "formación docente", "política educativa", "latinoamérica",
+# Keywords HIGH SPECIFICITY — al menos 1 debe estar en title/description
+CORE_KEYWORDS = [
+    # Primera infancia / ECD
+    "early childhood", "ecd", "early childhood development",
+    "preschool", "preescolar", "educación inicial", "primera infancia",
+    "desarrollo infantil temprano", "cero a siempre",
+    # Economía del cuidado
+    "care economy", "economía del cuidado", "trabajo de cuidado",
+    "cuidado infantil remunerado",
+    # Empoderamiento femenino
+    "women empowerment", "empoderamiento femenino", "women leadership",
+    "gender equality", "igualdad de género",
+    # Formación de líderes educativos
+    "teacher training", "formación docente", "acompañamiento pedagógico",
+    "educational leadership", "líderes educativos",
+    # MEAL / Gestión del conocimiento
+    "monitoring evaluation", "monitoreo y evaluación",
+    "knowledge management", "sistematización",
+    # Trayectorias educativas
+    "educational trajectories", "continuidad educativa", "transición escolar",
+    # Transformación sistémica
+    "systemic change", "modelo escalable", "transferencia de modelo",
+]
+
+# Keywords GEOGRAFÍA (al menos 1 debe estar presente)
+GEO_KEYWORDS = [
+    "colombia", "latin america", "latinoamérica", "latam",
+    "región andina", "global south", "developing countries in latin america",
 ]
 
 SEARCH_TERMS = [
-    # ECD core
-    "early childhood education",
-    "early childhood development",
-    "preschool capacity building",
-    "ECD scalable model",
-    # Latam / Colombia focus
-    "child development latin america",
-    "early education colombia",
-    "education latin america",
-    "youth development latin america",
-    # Teacher / capacity building
-    "teacher training developing countries",
-    "education capacity building",
-    # International / USAID-style
-    "international education program",
-    "global development education",
-    "USAID basic education",
-    # Gender / vulnerable populations
-    "girls education developing",
-    "vulnerable children education",
+    # Primera infancia + escalabilidad
+    "early childhood development scalable",
+    "early childhood education impact",
+    "first years learning outcomes",
+    # Cuidado infantil + política pública
+    "childcare policy framework",
+    "early care policy latin america",
+    # Formación docente + primera infancia
+    "teacher training early childhood",
+    "educational leadership capacity building",
+    # Género + primera infancia
+    "women early childhood development",
+    "gender equality first years",
+    # Transferencia de modelo / sistémico
+    "knowledge transfer education model",
+    "education systemic change",
 ]
 
 GRANTS_GOV_API = "https://api.grants.gov/v1/api/search2"
@@ -109,10 +126,14 @@ class GrantsGovScraper(BaseScraper):
         if not title:
             return None
 
-        # La API search2 ya filtró por keyword — confiamos en eso.
-        # Filtro adicional opcional sobre el título para descartar ruido
-        # (ej. "Construction Grants" sin relación con ECD).
-        # Mantenemos permisivo aquí; el LLM hace el filtro fino en el scoring.
+        # Filtro AND: al menos 1 CORE_KEYWORD + al menos 1 GEO_KEYWORD
+        text_to_search = (title + " " + (raw.get("agency") or "")).lower()
+        has_core = any(kw.lower() in text_to_search for kw in CORE_KEYWORDS)
+        has_geo = any(kw.lower() in text_to_search for kw in GEO_KEYWORDS)
+
+        if not (has_core and has_geo):
+            # No cumple los criterios de relevancia
+            return None
 
         # Fecha límite
         deadline = _parse_date(raw.get("closeDate"))

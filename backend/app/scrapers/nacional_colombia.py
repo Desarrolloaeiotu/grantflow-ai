@@ -35,11 +35,11 @@ from app.scrapers.base import BaseScraper, ScraperError
 
 logger = structlog.get_logger()
 
-# Palabras clave que definen una oportunidad relevante para Nacional Colombia
+# Palabras clave HIGH SPECIFICITY para Nacional Colombia
 NACIONAL_KEYWORDS = (
-    # Educación inicial / Primera infancia
+    # Primera infancia / ECD
     "primera infancia", "educación inicial", "educación preescolar",
-    "desarrollo infantil", "desarrollo temprano",
+    "desarrollo infantil", "desarrollo temprano", "cero a siempre",
     "early childhood", "ecd", "preschool",
 
     # CDI y operación
@@ -47,22 +47,34 @@ NACIONAL_KEYWORDS = (
     "modalidad institucional", "modalidad familiar",
     "cuidado infantil", "cuidadores",
 
-    # Docentes y formación
+    # Docentes y formación de líderes
     "formación docente", "capacitación docentes",
     "acompañamiento pedagógico", "asesoría pedagógica",
-    "fortalecimiento de capacidades",
+    "fortalecimiento de capacidades", "líderes educativos",
 
-    # Política pública
+    # Política pública y transformación sistémica
     "cero a siempre", "política pública", "política educativa",
     "estándares icbf", "lineamientos", "orientaciones mineducación",
+    "incidencia política", "transformación sistémica",
 
-    # Cajas de compensación
+    # Cajas de compensación (aliados clave)
     "cafam", "caja de compensación", "cajas de compensación",
     "afiliados", "beneficiarios",
 
     # Economía del cuidado
     "economía del cuidado", "sostenibilidad financiera",
-    "modelo escalable", "transferencia de modelo",
+    "trabajo de cuidado", "cuidadoras",
+
+    # Empoderamiento femenino
+    "empoderamiento femenino", "women empowerment",
+    "género", "gender", "mujeres",
+
+    # MEAL y trayectorias
+    "monitoreo y evaluación", "sistematización",
+    "trayectorias educativas", "continuidad educativa",
+
+    # Modelo y transferencia
+    "modelo escalable", "transferencia de modelo", "replicación",
 )
 
 USER_AGENT = "Mozilla/5.0 (compatible; GrantFlow-AI/1.0; +https://aeiotu.org)"

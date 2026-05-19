@@ -29,11 +29,24 @@ LIST_PAGES = (
     "https://www.developmentaid.org/news-stream/posts/all/calls-for-proposals",
 )
 
-RELEVANT_KEYWORDS = (
-    "early childhood", "ecd", "education", "child", "youth",
-    "primera infancia", "educación", "infancia", "niñez",
-    "latin america", "latinoamérica", "colombia", "andean",
-    "capacity", "fortalecimiento", "transferencia",
+CORE_KEYWORDS = (
+    # Primera infancia
+    "early childhood", "ecd", "primera infancia", "educación inicial",
+    "desarrollo infantil", "cero a siempre",
+    # Empoderamiento femenino
+    "gender equality", "women empowerment", "empoderamiento femenino",
+    # Formación docente
+    "teacher training", "formación docente", "educational leadership",
+    # MEAL
+    "monitoring evaluation", "sistematización", "monitoreo y evaluación",
+    # Economía del cuidado
+    "care economy", "economía del cuidado",
+    # Transformación sistémica
+    "transferencia", "modelo escalable", "incidencia política",
+)
+
+GEO_KEYWORDS = (
+    "latin america", "latinoamérica", "colombia", "región andina",
 )
 
 USER_AGENT = "Mozilla/5.0 (compatible; GrantFlow-AI/1.0; +https://aeiotu.org)"
@@ -106,7 +119,11 @@ class DevelopmentAidScraper(BaseScraper):
 
         description = raw.get("snippet", "")
         haystack = (title + " " + description).lower()
-        if not any(kw in haystack for kw in RELEVANT_KEYWORDS):
+
+        # Filtro AND: al menos 1 CORE + al menos 1 GEO
+        has_core = any(kw.lower() in haystack for kw in CORE_KEYWORDS)
+        has_geo = any(kw.lower() in haystack for kw in GEO_KEYWORDS)
+        if not (has_core and has_geo):
             return None
 
         return OpportunityCreate(
