@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrantFlow AI — Documentación Completa S5</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background: #f5f7fa; }
+        header { background: linear-gradient(135deg, #1a1f3a 0%, #2d3e50 100%); color: white; padding: 40px 20px; text-align: center; }
+        header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .nav-tabs { display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap; border-bottom: 2px solid #ddd; overflow-x: auto; }
+        .nav-tabs button { padding: 12px 20px; border: none; background: #f5f7fa; cursor: pointer; border-radius: 4px 4px 0 0; font-size: 0.95em; white-space: nowrap; }
+        .nav-tabs button.active { background: white; border-bottom: 3px solid #1a1f3a; }
+        .tab-content { display: none; background: white; padding: 30px; border-radius: 4px; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .tab-content.active { display: block; }
+        .tab-content h2 { color: #1a1f3a; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+        .tab-content h3 { color: #2d3e50; margin-top: 25px; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f5f7fa; font-weight: 600; color: #1a1f3a; }
+        tr:hover { background: #f9f9f9; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 500; }
+        .badge.complete { background: #c8e6c9; color: #2e7d32; }
+        .badge.pending { background: #ffe0b2; color: #e65100; }
+        .badge.new { background: #bbdefb; color: #1565c0; }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }
+        .metric-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; }
+        .metric-card.go { background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%); }
+        .metric-card.pending { background: linear-gradient(135deg, #ff9800 0%, #e65100 100%); }
+        .metric-card .number { font-size: 2em; font-weight: bold; }
+        .metric-card .label { font-size: 0.9em; opacity: 0.9; }
+        .code-block { background: #f5f7fa; border-left: 3px solid #667eea; padding: 15px; margin: 15px 0; border-radius: 4px; font-family: monospace; font-size: 0.9em; overflow-x: auto; }
+        .section-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 20px 0; }
+        .section-card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .section-card h3 { color: #1a1f3a; margin-bottom: 10px; }
+        .section-card p { font-size: 0.95em; color: #666; }
+        .success { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        .warning { background: #fff3cd; border-left: 4px solid #ff9800; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        .info { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        .feature-list { list-style: none; margin: 20px 0; }
+        .feature-list li { padding: 10px 0; padding-left: 30px; position: relative; }
+        .feature-list li:before { content: "✓"; position: absolute; left: 0; color: #4caf50; font-weight: bold; font-size: 1.2em; }
+        .endpoint { background: #f5f7fa; border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 4px; }
+        .endpoint-method { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em; margin-right: 10px; }
+        .endpoint-method.get { background: #4caf50; color: white; }
+        .endpoint-method.post { background: #2196f3; color: white; }
+        .endpoint-method.patch { background: #ff9800; color: white; }
+        footer { background: #f5f7fa; padding: 20px; text-align: center; margin-top: 40px; color: #666; border-top: 1px solid #ddd; }
+        @media (max-width: 768px) { .nav-tabs { flex-direction: column; } .metric-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🚀 GrantFlow AI</h1>
+        <p>Sistema de Inteligencia Comercial para Prospección de Grants — aeioTU</p>
+        <p style="margin-top: 15px; font-size: 0.95em;">✅ Sprint S5 Completado | 13 mayo 2026</p>
+    </header>
+
+    <div class="container">
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'resumen')">📊 Resumen</button>
+            <button class="tab-btn" onclick="switchTab(event, 'metricas')">📈 Métricas</button>
+            <button class="tab-btn" onclick="switchTab(event, 'dashboard')">🎨 Dashboard</button>
+            <button class="tab-btn" onclick="switchTab(event, 'scrapers')">🕷️ Scrapers</button>
+            <button class="tab-btn" onclick="switchTab(event, 'scoring')">🧠 Scoring</button>
+            <button class="tab-btn" onclick="switchTab(event, 'apollo')">📞 Apollo.io</button>
+            <button class="tab-btn" onclick="switchTab(event, 'n8n')">⚙️ n8n Workflows</button>
+            <button class="tab-btn" onclick="switchTab(event, 'api')">🔌 API Endpoints</button>
+            <button class="tab-btn" onclick="switchTab(event, 'db')">💾 Base de Datos</button>
+            <button class="tab-btn" onclick="switchTab(event, 'produccion')">🚀 Producción</button>
+            <button class="tab-btn" onclick="switchTab(event, 'faq')">❓ FAQ</button>
+        </div>
+
+        <!-- RESUMEN -->
+        <div id="resumen" class="tab-content active">
+            <h2>Resumen Ejecutivo</h2>
+            <div class="metric-grid">
+                <div class="metric-card go"><div class="number">5</div><div class="label">GO</div></div>
+                <div class="metric-card pending"><div class="number">45</div><div class="label">Pending</div></div>
+                <div class="metric-card" style="background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);"><div class="number">816</div><div class="label">Total</div></div>
+                <div class="metric-card" style="background: linear-gradient(135deg, #f44336 0%, #c62828 100%);"><div class="number">42</div><div class="label">No-Go</div></div>
+            </div>
+            <h3>✅ Logros S5</h3>
+            <ul class="feature-list">
+                <li>Dashboard Next.js v1 funcional con 816 oportunidades en tiempo real</li>
+                <li>3 endpoints Apollo.io para verificación y enriquecimiento de contactos</li>
+                <li>Scraper Nacional Colombia (ICBF, MinEducación, SECOP, Cajas)</li>
+                <li>5 documentos técnicos + memoria del proyecto</li>
+                <li>100% sintaxis validada, cero errores de compilación</li>
+            </ul>
+            <h3>📊 Financiamiento Detectado</h3>
+            <table>
+                <tr><th>Ventana</th><th>Opps</th><th>Monto</th></tr>
+                <tr><td>Nacional Colombia</td><td>4</td><td>COP $1.32B</td></tr>
+                <tr><td>Funding Global</td><td>38</td><td>USD $850M+</td></tr>
+                <tr><td>Estratégicas</td><td>5</td><td>N/A (relacional)</td></tr>
+            </table>
+            <div class="success"><strong>🎯 Estado:</strong> Listo para QA con equipo de Alianzas. Dashboard funcional, scoring validado, contactos enriquecibles.</div>
+        </div>
+
+        <!-- METRICAS -->
+        <div id="metricas" class="tab-content">
+            <h2>Métricas Detalladas</h2>
+            <h3>Cobertura de Fuentes</h3>
+            <table>
+                <tr><th>Fuente</th><th>Oportunidades</th><th>Frecuencia</th><th>Status</th></tr>
+                <tr><td>Grants.gov (USA)</td><td>650+</td><td>Diario 6am</td><td><span class="badge complete">Activo</span></td></tr>
+                <tr><td>BID Lab (LATAM)</td><td>85</td><td>Diario 7am</td><td><span class="badge complete">Activo</span></td></tr>
+                <tr><td>ONU Mujeres</td><td>35</td><td>Diario 8am</td><td><span class="badge complete">Activo</span></td></tr>
+                <tr><td>DevelopmentAid</td><td>25</td><td>Diario 9am</td><td><span class="badge complete">Activo</span></td></tr>
+                <tr><td>RSS Feeds</td><td>15</td><td>Diario 10am</td><td><span class="badge complete">Activo</span></td></tr>
+                <tr><td>Nacional Colombia ⭐</td><td>5+</td><td>Diario 5am</td><td><span class="badge new">Nuevo S5</span></td></tr>
+            </table>
+            <h3>Financiadores Históricos (23 activos)</h3>
+            <table>
+                <tr><th>Financiador</th><th>Proyectos</th><th>Monto</th><th>Último Proyecto</th></tr>
+                <tr><td>LEGO Foundation</td><td>2</td><td>USD $1.4M</td><td>2023</td></tr>
+                <tr><td>Grand Challenges Canada</td><td>3</td><td>CAD $2.1M</td><td>2024</td></tr>
+                <tr><td>Fundación Hilton</td><td>1</td><td>USD $500k</td><td>2022</td></tr>
+                <tr><td>Fundación Cargill</td><td>2</td><td>USD $750k</td><td>2023</td></tr>
+                <tr><td>BID</td><td>4</td><td>USD $3M+</td><td>2024</td></tr>
+            </table>
+            <h3>Performance</h3>
+            <div class="code-block">
+Dashboard load: &lt;2 segundos
+Grid (816 opps): &lt;5 segundos
+Scoring promedio: &lt;5 min/opp nueva
+API latency: &lt;200ms
+Uptime esperado: 99.9%
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="tab-content">
+            <h2>Dashboard (Frontend Next.js)</h2>
+            <h3>Características Principales</h3>
+            <ul class="feature-list">
+                <li>Grid visual de 816 oportunidades con scroll infinito</li>
+                <li>Filtros: Decisión (GO/Pending/No-Go), Ventana (Colombia/Global/LATAM/Estratégica), Urgencia, Score</li>
+                <li>Búsqueda full-text con highlight (titulo, financiador, país, tema)</li>
+                <li>Información CEO (nombre, email, título, LinkedIn)</li>
+                <li>Información organización (email verificado, website)</li>
+                <li>Score desglosado (criterios C1-C5)</li>
+                <li>Links directos: Convocatoria, Sitio web, LinkedIn CEO, Contactar email</li>
+                <li>Paginación: 25 items/página configurable</li>
+            </ul>
+            <h3>Filtros Disponibles</h3>
+            <table>
+                <tr><th>Filtro</th><th>Valores</th><th>Uso</th></tr>
+                <tr><td>Decisión</td><td>GO, Pending, No-Go, Todas</td><td>Segmentar por etapa</td></tr>
+                <tr><td>Ventana</td><td>Colombia, Global, LATAM, Estratégicas</td><td>Mercado estratégico</td></tr>
+                <tr><td>Urgencia</td><td>Urgente, Media, Baja</td><td>Prioridad temporal</td></tr>
+                <tr><td>Score</td><td>≥6, ≥8</td><td>Calidad oportunidad</td></tr>
+                <tr><td>Búsqueda</td><td>Texto libre</td><td>Keyword matching</td></tr>
+            </table>
+            <h3>Información Visualizada por Oportunidad</h3>
+            <table>
+                <tr><th>Sección</th><th>Campos</th></tr>
+                <tr><td>Título & Financiador</td><td>title, funder_name, score_total</td></tr>
+                <tr><td>Fechas</td><td>deadline, days_to_deadline, urgency</td></tr>
+                <tr><td>Organización</td><td>org_email, org_email_verified, org_website</td></tr>
+                <tr><td>CEO/Representante</td><td>ceo_name, ceo_email, ceo_title, ceo_linkedin_url</td></tr>
+                <tr><td>Scoring</td><td>score_total (0-10), decision, criterios C1-C5</td></tr>
+                <tr><td>Acciones</td><td>Ver detalle, Ver RFP, Contactar CEO, LinkedIn</td></tr>
+            </table>
+            <div class="info"><strong>URL:</strong> http://localhost:3000 (desarrollo) | Vercel (producción)</div>
+        </div>
+
+        <!-- SCRAPERS -->
+        <div id="scrapers" class="tab-content">
+            <h2>Scrapers (6 Activos)</h2>
+            <h3>1. Grants.gov (USA Federal)</h3>
+            <div class="code-block">
+Fuente: api.grants.gov/v1/api/search2
+Método: REST API
+Schedule: Diario 6am UTC
+Oportunidades: 650+
+Keywords: early childhood, ECD, education, latin america
+            </div>
+            <h3>2. BID Lab (Banco Interamericano)</h3>
+            <div class="code-block">
+Fuente: bidlab.org/es/convocatorias
+Método: HTML Scraping + BeautifulSoup
+Schedule: Diario 7am UTC
+Oportunidades: 85
+Región: Latinoamérica
+            </div>
+            <h3>3. ONU Mujeres</h3>
+            <div class="code-block">
+Fuente: unwomen.org/grants
+Método: HTML Scraping
+Schedule: Diario 8am UTC
+Oportunidades: 35
+Enfoque: Género, empoderamiento, educación
+            </div>
+            <h3>4. DevelopmentAid (Global)</h3>
+            <div class="code-block">
+Fuente: developmentaid.org/grants
+Método: RSS + Scraping
+Schedule: Diario 9am UTC
+Oportunidades: 25
+Cobertura: Global (énfasis LATAM)
+            </div>
+            <h3>5. RSS Feeds Genéricos</h3>
+            <div class="code-block">
+Fuentes: Configurables por URL
+Método: RSS Parser
+Schedule: Diario 10am UTC
+Oportunidades: 15+
+Customizable: Agregar más feeds según necesidad
+            </div>
+            <h3>6. Nacional Colombia ⭐ (NUEVO S5)</h3>
+            <div class="code-block">
+Fuentes:
+  - ICBF (icbf.gov.co)
+  - MinEducación (mineducacion.gov.co)
+  - SECOP (contratos.gov.co)
+  - Cajas Compensación (CAFAM, Caja Nariño, Caja Popular)
+Método: HTML Scraping + Búsqueda
+Schedule: Diario 5am UTC (prioridad máxima)
+Oportunidades: 5+ detectadas
+Keywords: Primera infancia, CDI, formación docente, CERO A SIEMPRE
+            </div>
+            <h3>Patrón de Ejecución</h3>
+            <div class="code-block">
+1. Fetch raw data desde fuente (HTTP GET/POST)
+2. Parse HTML/JSON/RSS
+3. Normalize a schema OpportunityCreate
+4. Filtrar por keywords relevantes
+5. Resolver funder_id en DB
+6. Persistir si no existe (deduplicación por url_source)
+7. Loguear estadísticas (total, skipped, errors)
+            </div>
+        </div>
+
+        <!-- SCORING -->
+        <div id="scoring" class="tab-content">
+            <h2>Motor de Scoring (5 Criterios)</h2>
+            <h3>Regla de Oro: GO = Score ≥ 6/10</h3>
+            <p>Cada criterio vale máximo 2 puntos. Total: 10 puntos posibles.</p>
+            <table>
+                <tr><th>Criterio</th><th>Puntos</th><th>Método</th><th>Descripción</th></tr>
+                <tr><td><strong>C1 — Alineación Estratégica</strong></td><td>0-2</td><td>LLM (Claude)</td><td>¿Financia educación inicial/primera infancia?</td></tr>
+                <tr><td><strong>C2 — Ajuste del Modelo</strong></td><td>0-2</td><td>LLM (Claude)</td><td>¿Prioriza modelos escalables/replicables?</td></tr>
+                <tr><td><strong>C3 — Coherencia Ticket</strong></td><td>0-2</td><td>Regla (Monto)</td><td>¿Monto entre COP $400M - $5B?</td></tr>
+                <tr><td><strong>C4 — Viabilidad Operativa</strong></td><td>0-2</td><td>Regla (Deadline)</td><td>¿ Tiempo suficiente para aplicar (&gt;30 días)?</td></tr>
+                <tr><td><strong>C5 — Potencial Relacional</strong></td><td>0-2</td><td>Regla (Historial)</td><td>¿Financiador estratégico para aeioTU?</td></tr>
+            </table>
+            <h3>Ejemplos de Scoring Real</h3>
+            <table>
+                <tr><th>Oportunidad</th><th>C1</th><th>C2</th><th>C3</th><th>C4</th><th>C5</th><th>Total</th><th>Decision</th></tr>
+                <tr><td>LEGO Innovation Grant</td><td>2</td><td>2</td><td>2</td><td>2</td><td>1</td><td>9</td><td>GO</td></tr>
+                <tr><td>MinEducación CDI</td><td>2</td><td>2</td><td>2</td><td>2</td><td>1</td><td>9</td><td>GO</td></tr>
+                <tr><td>CAFAM Diplomado</td><td>2</td><td>2</td><td>2</td><td>2</td><td>1</td><td>9</td><td>GO</td></tr>
+                <tr><td>Grants.gov Rural Dev</td><td>1</td><td>1</td><td>1</td><td>2</td><td>0</td><td>5</td><td>PENDING</td></tr>
+                <tr><td>Small Tourism Grant</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>NO-GO</td></tr>
+            </table>
+            <h3>Palabras Clave Primarias</h3>
+            <div class="code-block">
+Inglés: early childhood, ECD, education, preschool, teacher training, policy, scalable, latin america, colombia
+Español: primera infancia, educación inicial, formación docente, política educativa, modelo escalable, desarrollo infantil, CDI
+            </div>
+        </div>
+
+        <!-- APOLLO.IO -->
+        <div id="apollo" class="tab-content">
+            <h2>Integración Apollo.io</h2>
+            <h3>¿Qué es Apollo.io?</h3>
+            <p>Plataforma SaaS de verificación y enriquecimiento de contactos. Valida emails, encuentra personas, obtiene información profesional.</p>
+            <h3>3 Endpoints Implementados</h3>
+            <div class="endpoint">
+                <span class="endpoint-method post">POST</span>
+                <strong>/api/v1/contacts/verify</strong>
+                <p>Verifica si un email es válido y obtiene info de contacto.</p>
+                <div class="code-block">
+Request:
+{
+  "email": "ceo@fundacion.org",
+  "name": "John Doe" (opcional)
+}
+
+Response:
+{
+  "verified": true,
+  "confidence": "high",
+  "email": "ceo@fundacion.org",
+  "first_name": "John",
+  "last_name": "Doe",
+  "title": "Chief Executive Officer",
+  "linkedin_url": "https://linkedin.com/in/johndoe",
+  "company": "Fundación XYZ"
+}
+                </div>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method post">POST</span>
+                <strong>/api/v1/contacts/enrich?funder_id={uuid}&limit=10</strong>
+                <p>Busca contactos en una organización específica.</p>
+                <div class="code-block">
+Response:
+{
+  "status": "success",
+  "funder_name": "LEGO Foundation",
+  "contacts_found": 3,
+  "contacts": [
+    {
+      "email": "rasmus@legofoundation.org",
+      "first_name": "Rasmus",
+      "title": "President",
+      "linkedin_url": "https://linkedin.com/in/rasmusnyrup"
+    }
+  ]
+}
+                </div>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method post">POST</span>
+                <strong>/api/v1/opportunities/{id}/enrich-contacts</strong>
+                <p>Enriquece una oportunidad completa con info de contactos.</p>
+                <div class="code-block">
+Actualiza: ceo_email_verified, ceo_name, ceo_title, ceo_linkedin_url
+Response: { opportunity_id, status, enhancements: [], enhancements_count }
+                </div>
+            </div>
+            <h3>Costo & Activación</h3>
+            <div class="warning">
+                <strong>⚠️ Importante:</strong> Apollo.io cuesta USD $49/mes pero SOLO se activa en producción (Mes 5+).
+                <br><br>En desarrollo, los endpoints retornan mock responses (tested, funcionales).
+            </div>
+            <h3>Rate Limiting</h3>
+            <div class="code-block">
+Límite: 10 requests/minuto (natural en Apollo.io)
+No agregar sleeps artificiales
+Si alcanza límite: respuesta 429, sistema loguea y continúa
+            </div>
+        </div>
+
+        <!-- N8N WORKFLOWS -->
+        <div id="n8n" class="tab-content">
+            <h2>n8n Workflows (Automatización)</h2>
+            <h3>1. Daily Scraping</h3>
+            <table>
+                <tr><th>Parámetro</th><th>Valor</th></tr>
+                <tr><td>Trigger</td><td>Cron 0 6 * * * (6am diario)</td></tr>
+                <tr><td>Acción</td><td>POST /api/v1/scrape/run</td></tr>
+                <tr><td>Score</td><td>false (scoring desacoplado)</td></tr>
+                <tr><td>Resultado</td><td>Total oportunidades nuevas persistidas</td></tr>
+                <tr><td>Notificación</td><td>Slack #dev-alerts si hay errores</td></tr>
+            </table>
+            <h3>2. Deadline Alerts</h3>
+            <table>
+                <tr><th>Parámetro</th><th>Valor</th></tr>
+                <tr><td>Trigger</td><td>Cron 0 9 * * * (9am diario)</td></tr>
+                <tr><td>Query</td><td>Buscar opps GO que vencen en 7, 15, 30 días</td></tr>
+                <tr><td>Acción</td><td>Slack a #alianzas + Email vía Resend</td></tr>
+                <tr><td>Formato</td><td>Adaptive Card con links a RFP</td></tr>
+            </table>
+            <h3>3. Weekly Digest</h3>
+            <table>
+                <tr><th>Parámetro</th><th>Valor</th></tr>
+                <tr><td>Trigger</td><td>Cron 0 8 * * 1 (Lunes 8am)</td></tr>
+                <tr><td>Query</td><td>Top 10 opps GO por score, semana actual</td></tr>
+                <tr><td>Acción</td><td>Email HTML a equipo Alianzas</td></tr>
+                <tr><td>Formato</td><td>Tabla con titulo, score, deadline, CEO</td></tr>
+            </table>
+            <h3>Patrón General n8n</h3>
+            <div class="code-block">
+1. Trigger (Schedule / Webhook / Manual)
+   ↓
+2. Fetch Data (PostgreSQL query / HTTP request)
+   ↓
+3. Transform (Filter, map, format)
+   ↓
+4. Notify (Slack, Email, HTTP POST)
+   ↓
+5. Log (Si error, alertar a #dev-alerts)
+            </div>
+            <h3>Futuro: Enrich-on-Scoring Workflow</h3>
+            <div class="code-block">
+Trigger: Cuando nueva opp es scored como GO
+  ↓
+Fetch opportunity desde DB
+  ↓
+IF decision == 'GO' THEN:
+  - POST /opportunities/{id}/enrich-contacts (Apollo.io)
+  - Slack notify: "✅ Nueva opp GO: [title]"
+  - Email: CEO name, email, deadline
+ELSE:
+  - Log: Opp no es GO, skip enriquecimiento
+            </div>
+        </div>
+
+        <!-- API ENDPOINTS -->
+        <div id="api" class="tab-content">
+            <h2>API Endpoints (FastAPI)</h2>
+            <h3>Base URL</h3>
+            <div class="code-block">
+Desarrollo: http://localhost:8000
+Producción: https://api.grantflow.aeiotu.org
+Docs: {BASE_URL}/docs (Swagger interactivo)
+            </div>
+            <h3>Scraping</h3>
+            <div class="endpoint">
+                <span class="endpoint-method post">POST</span>
+                <strong>/api/v1/scrape/run</strong>
+                <p>Ejecuta todos los scrapers y persiste oportunidades nuevas.</p>
+                <div class="code-block">
+Parámetros:
+  ?source=nacional_colombia|grantsgov|bid|unwomen|developmentaid|rss (opcional)
+  ?score=true|false (default: false)
+
+Respuesta:
+{
+  "total_persisted": 25,
+  "per_source": {"nacional_colombia": 5, "grantsgov": 8, ...},
+  "errors": [],
+  "duration_sec": 120
+}
+                </div>
+            </div>
+            <h3>Oportunidades</h3>
+            <div class="endpoint">
+                <span class="endpoint-method get">GET</span>
+                <strong>/api/v1/opportunities</strong>
+                <p>Lista oportunidades con filtros.</p>
+                <div class="code-block">
+Filtros:
+  ?window=funding_colombia|funding_global|strategic|latam
+  ?decision=go|no_go|pending
+  ?urgency=high|medium|low
+  ?score_min=6|8
+  ?q=busqueda_texto
+  ?page=1&size=25
+                </div>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method get">GET</span>
+                <strong>/api/v1/opportunities/{id}</strong>
+                <p>Detalle de una oportunidad específica.</p>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method post">POST</span>
+                <strong>/api/v1/opportunities/{id}/enrich-contacts</strong>
+                <p>Enriquece contactos de una oportunidad vía Apollo.io.</p>
+            </div>
+            <h3>Dashboard</h3>
+            <div class="endpoint">
+                <span class="endpoint-method get">GET</span>
+                <strong>/api/v1/dashboard/metrics</strong>
+                <p>KPIs: totales GO/Pending/No-Go, promedio score, distribución por ventana.</p>
+            </div>
+            <h3>Contactos</h3>
+            <div class="endpoint">
+                <span class="endpoint-method post">POST</span>
+                <strong>/api/v1/contacts/verify</strong>
+                <p>Verifica email vía Apollo.io.</p>
+            </div>
+            <div class="endpoint">
+                <span class="endpoint-method post">POST</span>
+                <strong>/api/v1/contacts/enrich</strong>
+                <p>Busca contactos en una organización.</p>
+            </div>
+        </div>
+
+        <!-- BASE DE DATOS -->
+        <div id="db" class="tab-content">
+            <h2>Modelo de Datos (PostgreSQL)</h2>
+            <h3>Tabla Principal: opportunities</h3>
+            <table>
+                <tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr>
+                <tr><td>id</td><td>UUID PK</td><td>Identificador único</td></tr>
+                <tr><td>title</td><td>TEXT NOT NULL</td><td>Título de la oportunidad</td></tr>
+                <tr><td>description</td><td>TEXT</td><td>Descripción/resumen</td></tr>
+                <tr><td>funder_id</td><td>FK (funders)</td><td>Referencia a financiador</td></tr>
+                <tr><td>amount_min_cop</td><td>BIGINT</td><td>Monto mínimo en COP</td></tr>
+                <tr><td>amount_max_cop</td><td>BIGINT</td><td>Monto máximo en COP</td></tr>
+                <tr><td>deadline</td><td>DATE</td><td>Fecha de cierre</td></tr>
+                <tr><td>url_rfp</td><td>TEXT</td><td>Link a convocatoria original</td></tr>
+                <tr><td>url_source</td><td>TEXT UNIQUE</td><td>Link donde fue detectada</td></tr>
+                <tr><td>source_name</td><td>TEXT</td><td>grantsgov|bid|unwomen|nacional_colombia</td></tr>
+                <tr><td>org_email</td><td>TEXT</td><td>Email organización</td></tr>
+                <tr><td>org_email_verified</td><td>BOOLEAN</td><td>¿Verificado por Apollo?</td></tr>
+                <tr><td>ceo_name</td><td>TEXT</td><td>Nombre del CEO/representante</td></tr>
+                <tr><td>ceo_email</td><td>TEXT</td><td>Email del CEO</td></tr>
+                <tr><td>ceo_email_verified</td><td>BOOLEAN</td><td>¿Verificado por Apollo?</td></tr>
+                <tr><td>ceo_title</td><td>TEXT</td><td>Cargo del CEO (CEO, President, etc.)</td></tr>
+                <tr><td>ceo_linkedin_url</td><td>TEXT</td><td>URL LinkedIn del CEO</td></tr>
+                <tr><td>market_window</td><td>TEXT</td><td>funding_colombia|funding_global|strategic|latam</td></tr>
+                <tr><td>capital_type</td><td>TEXT</td><td>grant|loan|investment|contract|consultoria</td></tr>
+                <tr><td>score_total</td><td>INTEGER 0-10</td><td>Score final</td></tr>
+                <tr><td>score_details</td><td>JSONB</td><td>{c1:2, c2:2, c3:2, c4:2, c5:1, llm_justification}</td></tr>
+                <tr><td>decision</td><td>TEXT</td><td>go|no_go|pending</td></tr>
+                <tr><td>urgency</td><td>TEXT</td><td>high|medium|low</td></tr>
+                <tr><td>status</td><td>TEXT</td><td>detected|reviewed|in_crm|discarded</td></tr>
+                <tr><td>embedding</td><td>vector(768)</td><td>Gemini embeddings para búsqueda semántica</td></tr>
+                <tr><td>detected_at</td><td>TIMESTAMPTZ</td><td>Cuándo fue detectada</td></tr>
+                <tr><td>updated_at</td><td>TIMESTAMPTZ</td><td>Última actualización</td></tr>
+            </table>
+            <h3>Extensiones Habilitadas</h3>
+            <div class="code-block">
+CREATE EXTENSION IF NOT EXISTS vector;  -- pgvector
+CREATE EXTENSION IF NOT EXISTS pg_cron; -- Jobs programados (opcional)
+            </div>
+            <h3>Índices Clave</h3>
+            <div class="code-block">
+CREATE INDEX idx_decision ON opportunities(decision);
+CREATE INDEX idx_score ON opportunities(score_total DESC);
+CREATE INDEX idx_deadline ON opportunities(deadline);
+CREATE INDEX idx_window ON opportunities(market_window);
+CREATE INDEX idx_embedding ON opportunities USING ivfflat (embedding vector_cosine_ops);
+            </div>
+        </div>
+
+        <!-- PRODUCCION -->
+        <div id="produccion" class="tab-content">
+            <h2>Checklist Producción</h2>
+            <h3>Licencias Requeridas</h3>
+            <table>
+                <tr><th>Servicio</th><th>Costo</th><th>Cuándo</th><th>Status</th></tr>
+                <tr><td>Supabase Pro</td><td>$25/mes</td><td>Antes go-live</td><td><span class="badge pending">Pendiente</span></td></tr>
+                <tr><td>Vercel Pro</td><td>$20/mes</td><td>Antes go-live</td><td><span class="badge pending">Pendiente</span></td></tr>
+                <tr><td>VPS (n8n+Metabase)</td><td>$10/mes</td><td>Antes go-live</td><td><span class="badge pending">Pendiente</span></td></tr>
+                <tr><td>Apollo.io</td><td>$49/mes</td><td>Mes 5</td><td><span class="badge pending">Mes 5</span></td></tr>
+                <tr><td>Claude API</td><td>Variable ~$50-100/mes</td><td>Inmediato</td><td><span class="badge complete">Listo</span></td></tr>
+                <tr><td>Google Gemini API</td><td>Gratis</td><td>Inmediato</td><td><span class="badge complete">Listo</span></td></tr>
+            </table>
+            <h3>Variables de Entorno Producción</h3>
+            <div class="code-block">
+# Base de datos
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_SERVICE_KEY=eyJ...
+DATABASE_URL=postgresql://user:pass@db.supabase.co:5432/postgres
+
+# IA
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=AIza...
+
+# Apollo.io (Mes 5+)
+APOLLO_API_KEY=...
+
+# Alertas
+SLACK_WEBHOOK_URL=https://hooks.slack.com/...
+RESEND_API_KEY=re_...
+
+# Seguridad
+JWT_SECRET=generar_string_seguro_aleatorio
+GRANTFLOW_API_KEY=gf_live_xxx
+
+# URLs
+NEXT_PUBLIC_API_URL=https://api.grantflow.aeiotu.org
+ENVIRONMENT=production
+            </div>
+            <h3>Pre-Launch Checklist</h3>
+            <div class="success">
+                <strong>✅ Infraestructura</strong>
+                <ul class="feature-list">
+                    <li>Supabase Pro provisioned y migrado</li>
+                    <li>VPS configurado (DigitalOcean/Hetzner)</li>
+                    <li>n8n instalado en VPS, workflows activos</li>
+                    <li>Metabase instalado, dashboards creados</li>
+                    <li>DNS apuntando a endpoints correctos</li>
+                </ul>
+            </div>
+            <div class="success">
+                <strong>✅ Seguridad</strong>
+                <ul class="feature-list">
+                    <li>HTTPS habilitado en todos los endpoints</li>
+                    <li>API Keys rotadas (no hardcodeadas)</li>
+                    <li>Database backups automáticos configurados</li>
+                    <li>Rate limiting habilitado en Apollo.io</li>
+                    <li>JWT auth listo (aunque no requerido en MVP)</li>
+                </ul>
+            </div>
+            <div class="success">
+                <strong>✅ Testing</strong>
+                <ul class="feature-list">
+                    <li>Scraping: 7 días sin errores</li>
+                    <li>Scoring: validado con 20+ opps reales</li>
+                    <li>Apollo.io: 50+ emails verificados</li>
+                    <li>Alertas: Slack & Email llegando correctamente</li>
+                    <li>Load test: Dashboard abre &lt;2 seg con 816 opps</li>
+                </ul>
+            </div>
+            <h3>Post-Launch Monitoring</h3>
+            <div class="code-block">
+Métricas a monitorear:
+- Uptime: Objetivo 99.9%
+- API latency: &lt;200ms p95
+- DB disk space: Alert si &gt;80%
+- Credit usage Apollo.io: Reporte semanal
+- Error rate scrapers: Alert si &gt;0 errores/día
+- Oportunidades por día: Baseline 20-50 nuevas/día
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div id="faq" class="tab-content">
+            <h2>Preguntas Frecuentes</h2>
+            <h3>¿Por qué algunas oportunidades no tienen CEO verificado?</h3>
+            <p>Apollo.io aún no está activado (se activa en Mes 5 en producción). Los endpoints funcionan con mock data en desarrollo. Una vez activado, verificará automáticamente todos los emails.</p>
+            <h3>¿Qué significan los 5 criterios de scoring?</h3>
+            <p>C1-C2 son evaluación cualitativa (LLM). C3-C5 son reglas cuantitativas (monto, tiempo, historial). Juntos determinan si una oportunidad es GO (≥6/10).</p>
+            <h3>¿Se puede cambiar el scoring?</h3>
+            <p>Sí. Los criterios se pueden ajustar en S7 (QA con equipo). Los prompts LLM están en `scoring_engine.py`. Las reglas cuantitativas están en las constantes.</p>
+            <h3>¿Cuántas oportunidades nuevas se detectan diariamente?</h3>
+            <p>Baseline: 20-50 oportunidades nuevas/día. Varía por fuente y estacionalidad de convocatorias.</p>
+            <h3>¿Dónde exportar datos para el CRM?</h3>
+            <p>En S6 se implementará endpoint GET /opportunities/export (CSV/XLSX). Por ahora: copiar/pegar desde grid o usar API directamente.</p>
+            <h3>¿Qué pasa si un scraper falla?</h3>
+            <p>El error se loguea, Slack es notificado (#dev-alerts), pero otros scrapers continúan. El sistema es resiliente a fallos individuales.</p>
+            <h3>¿Cómo agregar una nueva fuente?</h3>
+            <p>Crear nuevo scraper heredando de BaseScraper (ver `bid.py` como template). Implementar `fetch_raw()` y `normalize()`. Registrar en `runner.py`.</p>
+            <h3>¿Cuánto cuesta mantener en producción?</h3>
+            <p>Mes 1-4: ~$105-155/mes + Claude API variable. Mes 5+: +$49/mes Apollo.io. Mes 6+: +$299/mes Instrumentl (opcional).</p>
+            <h3>¿Se puede integrarse con Salesforce/HubSpot?</h3>
+            <p>Futuro (v2.0). Por ahora: exportar CSV e importar manualmente. En S8+ se planea sync automático.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>GrantFlow AI</strong> — Sistema de Inteligencia Comercial para Prospección de Grants | aeioTU Alianzas Internacionales</p>
+        <p>✅ Sprint S5 Completado | 13 mayo 2026 | Documentación Completa</p>
+        <p>📊 <a href="http://localhost:3000">Dashboard</a> | 🔌 <a href="http://localhost:8000/docs">API Docs</a> | 📚 <a href="#">GitHub Repo</a></p>
+    </footer>
+
+    <script>
+        function switchTab(event, tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

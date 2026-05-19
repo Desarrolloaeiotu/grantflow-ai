@@ -266,3 +266,102 @@ async def update_opportunity_status(
     await db.refresh(opp)
     logger.info("Opportunity status updated", opportunity_id=str(opportunity_id), status=opp.status)
     return OpportunityRead.model_validate(opp)
+
+
+@router.post("/{opportunity_id}/enrich-contacts")
+async def enrich_opportunity_contacts(
+    opportunity_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Enrich an opportunity with contact info using Apollo.io.
+
+    Verifies CEO and organization emails, and looks up CEO info.
+    """
+    from datetime import datetime, timezone
+
+    from app.services.apollo_service import apollo
+
+    opp = await db.get(Opportunity, opportunity_id)
+    if not opp:
+        raise HTTPException(status_code=404, detail="Oportunidad no encontrada")
+
+    results = {"opportunity_id": str(opportunity_id), "enhancements": []}
+
+    # 1. Verify organization email if it exists
+    if opp.org_email and not opp.org_email_verified:
+        logger.info("Verifying org email", org_email=opp.org_email)
+        org_verify = await apollo.verify_email(opp.org_email)
+        if org_verify.get("verified"):
+            opp.org_email_verified = True
+            opp.org_email_verified_at = datetime.now(timezone.utc)
+            results["enhancements"].append("org_email_verified")
+            logger.info("Org email verified", org_email=opp.org_email)
+
+    # 2. Verify CEO email if it exists
+    if opp.ceo_email and not opp.ceo_email_verified:
+        logger.info("Verifying CEO email", ceo_email=opp.ceo_email)
+        ceo_verify = await apollo.verify_email(opp.ceo_email, opp.ceo_name)
+        if ceo_verify.get("verified"):
+            opp.ceo_email_verified = True
+            opp.ceo_email_verified_at = datetime.now(timezone.utc)
+            results["enhancements"].append("ceo_email_verified")
+            logger.info("CEO email verified", ceo_email=opp.ceo_email)
+
+            # Update CEO info from Apollo if available
+            if not opp.ceo_name and ceo_verify.get("first_name"):
+                first = ceo_verify.get("first_name", "")
+                last = ceo_verify.get("last_name", "")
+                opp.ceo_name = f"{first} {last}".strip()
+                results["enhancements"].append("ceo_name_enriched")
+
+            if not opp.ceo_title and ceo_verify.get("title"):
+                opp.ceo_title = ceo_verify.get("title")
+                results["enhancements"].append("ceo_title_enriched")
+
+            if not opp.ceo_linkedin_url and ceo_verify.get("linkedin_url"):
+                opp.ceo_linkedin_url = ceo_verify.get("linkedin_url")
+                results["enhancements"].append("ceo_linkedin_enriched")
+
+    # 3. Search for CEO if we don't have email but have organization
+    if not opp.ceo_email and opp.source_name and not opp.ceo_name:
+        # Try searching by organization name
+        org_name = opp.source_name
+        if opp.funder_id:
+            funder = await db.get(Opportunity.__funder__)
+            if funder:
+                org_name = funder.name
+
+        logger.info("Searching for CEO", organization=org_name)
+        people = await apollo.search_people(company_name=org_name, limit=1)
+        if people:
+            person = people[0]
+            if person.get("first_name") or person.get("last_name"):
+                first = person.get("first_name", "")
+                last = person.get("last_name", "")
+                opp.ceo_name = f"{first} {last}".strip()
+                results["enhancements"].append("ceo_name_found")
+
+            if person.get("email"):
+                opp.ceo_email = person["email"]
+                if person.get("verified"):
+                    opp.ceo_email_verified = True
+                    opp.ceo_email_verified_at = datetime.now(timezone.utc)
+                results["enhancements"].append("ceo_email_found")
+
+            if person.get("title"):
+                opp.ceo_title = person["title"]
+                results["enhancements"].append("ceo_title_found")
+
+            if person.get("linkedin_url"):
+                opp.ceo_linkedin_url = person["linkedin_url"]
+                results["enhancements"].append("ceo_linkedin_found")
+
+    opp.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(opp)
+
+    logger.info("Opportunity enriched", opportunity_id=str(opportunity_id), enhancements=results["enhancements"])
+    results["status"] = "success"
+    results["enhancements_count"] = len(results["enhancements"])
+    return results

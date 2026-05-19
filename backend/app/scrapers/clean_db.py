@@ -13,24 +13,24 @@ async def clean_database():
     """Borra todas las oportunidades y score_log."""
     async with AsyncSessionLocal() as db:
         try:
-            print("[CLEAN] Borrando datos anteriores...")
-
-            # Borrar score_log primero (FK constraint)
+            print("[CLEAN] Borrando score_log...")
             result = await db.execute(text("DELETE FROM score_log"))
-            rows_deleted_log = result.rowcount
-            print(f"[OK] Eliminados {rows_deleted_log} registros de score_log")
-
-            # Borrar opportunities
-            result = await db.execute(text("DELETE FROM opportunities"))
-            rows_deleted_opp = result.rowcount
-            print(f"[OK] Eliminadas {rows_deleted_opp} oportunidades")
-
+            rows_log = result.rowcount
             await db.commit()
-            print("\n[SUCCESS] Base de datos limpia. Lista para nuevos datos.")
+            print(f"[OK] {rows_log} score_log eliminados y COMMITTED")
+
+            print("[CLEAN] Borrando opportunities...")
+            result = await db.execute(text("DELETE FROM opportunities"))
+            rows_opp = result.rowcount
+            await db.commit()
+            print(f"[OK] {rows_opp} opportunities eliminadas y COMMITTED")
+
+            print(f"\n[SUCCESS] Total eliminado: {rows_log + rows_opp} registros")
+            print("[SUCCESS] Base de datos limpia. Lista para nuevos datos.")
 
         except Exception as e:
             await db.rollback()
-            print(f"\n[ERROR] Problema durante la limpieza: {e}")
+            print(f"\n[ERROR] {e}")
             raise
 
 

@@ -731,6 +731,7 @@ class NacionalColombiaScraper(BaseScraper):
             eligible_countries=["Colombia"],
             sectors=["educacion_inicial", "primera_infancia"],
             capital_type="consultoria",
+            market_window="funding_colombia",
             raw_content=json.dumps(raw, default=str)[:10_000],
         )
 

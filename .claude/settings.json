@@ -15,7 +15,19 @@
       "Bash(taskkill //F //IM node.exe)",
       "Bash(sed -i '4,214d' page.tsx)",
       "Bash(sed -n '1,8p' page.tsx)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git push *)",
+      "Bash(py -m py_compile backend/app/services/scoring_engine.py)",
+      "Bash(py -m py_compile backend/app/services/embedding_service.py)",
+      "Bash(git -c user.email=jardinesaeiotu@gmail.com -c 'user.name=Luis Mendez' commit -m 'chore\\(deps\\): migrate google-generativeai to google-genai SDK *)",
+      "Bash(git checkout *)",
+      "Bash(git pull *)",
+      "Bash(ls .venv)",
+      "Bash(ls venv *)",
+      "Bash(.venv/Scripts/pip.exe uninstall *)",
+      "Bash(.venv/Scripts/pip.exe install *)",
+      "Bash(.venv/Scripts/python.exe -c \"from app.services.scoring_engine import ScoringEngine; from app.services.embedding_service import EmbeddingService; print\\('IMPORTS_OK'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c ' *)"
     ]
   }
 }

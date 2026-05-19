@@ -1,0 +1,209 @@
+{
+  "name": "Nacional Colombia - 5am Scraper",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "type": "cron",
+              "value": "0 5 * * *"
+            }
+          ]
+        }
+      },
+      "id": "e0fb7c4f-1e8a-45e1-a5f5-8d4c2a9f1b3e",
+      "name": "Cron - 5am UTC",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/scrape/run?source=nacional_colombia",
+        "authentication": "genericCredentialType",
+        "genericCredentialType": {
+          "authentication": "httpHeaderAuth",
+          "genericAuth": {
+            "headers": {
+              "X-API-Key": ""
+            }
+          }
+        },
+        "options": {}
+      },
+      "id": "a1c2d3e4-f5g6-h7i8-j9k0-l1m2n3o4p5q6",
+      "name": "POST /scrape/run nacional_colombia",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "{{ $json.total_persisted }}",
+              "condition": "exists"
+            }
+          ]
+        }
+      },
+      "id": "b2c3d4e5-f6g7-h8i9-j0k1-l2m3n4o5p6q7",
+      "name": "¿Éxito?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/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",
+        "contentType": "application/json",
+        "body": {
+          "text": "🇨🇴 Nacional Colombia - Scraper OK",
+          "blocks": [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "🇨🇴 Nacional Colombia Scraper",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Status:*\n✅ Exitoso"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Nuevas opps:*\n{{ $json.per_source.nacional_colombia || 0 }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Total persistido:*\n{{ $json.total_persisted }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Duración:*\n{{ $json.duration_sec }}s"
+                }
+              ]
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Timestamp:* {{ $json.completed_at }}"
+              }
+            }
+          ]
+        }
+      },
+      "id": "c3d4e5f6-g7h8-i9j0-k1l2-m3n4o5p6q7r8",
+      "name": "Slack OK",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        850,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/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",
+        "contentType": "application/json",
+        "body": {
+          "text": "🇨🇴 ❌ Nacional Colombia Scraper FAILED",
+          "blocks": [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "🇨🇴 Nacional Colombia Scraper - ERROR",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*❌ El scraper falló*\n\n{{ $json.message || 'Error desconocido' }}"
+              }
+            }
+          ]
+        }
+      },
+      "id": "d4e5f6g7-h8i9-j0k1-l2m3-n4o5p6q7r8s9",
+      "name": "Slack ERROR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        850,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Cron - 5am UTC": {
+      "main": [
+        [
+          {
+            "node": "POST /scrape/run nacional_colombia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /scrape/run nacional_colombia": {
+      "main": [
+        [
+          {
+            "node": "¿Éxito?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Éxito?": {
+      "main": [
+        [
+          {
+            "node": "Slack OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack ERROR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1e2f3a4b-5c6d-7e8f-9a0b-1c2d3e4f5a6b",
+  "id": "nacional-colombia-scraper",
+  "meta": {
+    "instanceId": "unique_grantflow_id"
+  }
+}

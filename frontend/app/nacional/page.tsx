@@ -1,5 +1,18 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { NATIONAL_OPPS, type NationalOpp } from '../lib/nationalOpps'
+
+interface ScrapedOpp {
+  id: string
+  title: string
+  score_total?: number
+  decision?: string
+  url_rfp: string
+  funder_name: string
+}
 
 const CATEGORY_COUNTS: Record<string, number> = NATIONAL_OPPS.reduce((acc, o) => {
   acc[o.category] = (acc[o.category] ?? 0) + 1
@@ -38,20 +51,46 @@ function critCls(pts: number): string {
   return 'crit-0'
 }
 
-export default async function NacionalPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: string }>
-}) {
-  const params = await searchParams
-  const filter = params.filter ?? 'all'
-  const filtered = applyFilter(NATIONAL_OPPS, filter)
+export default function NacionalPage() {
+  const searchParams = useSearchParams()
+  const [scrapedOpps, setScrapedOpps] = useState<ScrapedOpp[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const filter = searchParams.get('filter') ?? 'all'
+
+  useEffect(() => {
+    const fetchScrapedOpps = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+        const url = `${apiUrl}/api/v1/opportunities?source=nacional_colombia&window=funding_colombia&size=100`
+        console.log('[Nacional] Fetching from:', url)
+
+        const res = await fetch(url, { cache: 'no-store' })
+        console.log('[Nacional] Response status:', res.status)
+
+        if (res.ok) {
+          const data = await res.json()
+          console.log('[Nacional] Data received:', data)
+          setScrapedOpps(data.items || [])
+        } else {
+          console.error('[Nacional] API error:', res.status, res.statusText)
+        }
+      } catch (err) {
+        console.error('[Nacional] Fetch error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchScrapedOpps()
+  }, [])
 
   const totalGo = NATIONAL_OPPS.filter((o) => o.decision === 'go').length
   const totalPending = NATIONAL_OPPS.filter((o) => o.decision === 'pending').length
+  const totalScraped = scrapedOpps.length
+  const filtered = applyFilter(NATIONAL_OPPS, filter)
 
   const FILTERS = [
-    { key: 'all',      label: `Todas (${NATIONAL_OPPS.length})` },
+    { key: 'all',      label: `Curadas (${NATIONAL_OPPS.length})` },
     { key: 'gobierno', label: `Gobierno (${(CATEGORY_COUNTS.gobierno ?? 0) + (CATEGORY_COUNTS.politica ?? 0)})` },
     { key: 'privado',  label: `Privado (${CATEGORY_COUNTS.privado ?? 0})` },
     { key: 'cajas',    label: `Cajas Comp. (${CATEGORY_COUNTS.cajas ?? 0})` },
@@ -64,11 +103,12 @@ export default async function NacionalPage({
     <div className="page">
       <div className="topbar" style={{ margin: '-20px -24px 0', width: 'calc(100% + 48px)' }}>
         <div className="topbar-title">
-          Nacional Colombia <span>— oportunidades estratégicas 2026</span>
+          Nacional Colombia <span>— oportunidades estratégicas 2026 + detectadas</span>
         </div>
         <span className="chip chip-go">GO: {totalGo}</span>
         <span className="chip chip-warn">Pendiente: {totalPending}</span>
-        <span className="chip chip-muted">Total: {NATIONAL_OPPS.length}</span>
+        <span className="chip chip-muted">Curadas: {NATIONAL_OPPS.length}</span>
+        <span className="chip chip-blue">Detectadas: {totalScraped}</span>
       </div>
 
       {/* KPIs */}
@@ -341,6 +381,69 @@ export default async function NacionalPage({
           ))}
         </div>
       )}
+
+      {/* Sección: Oportunidades detectadas por scraping */}
+      <div style={{ marginTop: 48 }}>
+        <div className="section-hd">
+          <h2>
+            Oportunidades detectadas por scraping <em>— ICBF, Google News + otras fuentes</em>
+          </h2>
+        </div>
+
+        {loading ? (
+          <div className="empty-state">
+            <strong>Cargando oportunidades detectadas...</strong>
+          </div>
+        ) : scrapedOpps.length === 0 ? (
+          <div className="empty-state">
+            <strong>No hay oportunidades detectadas aún.</strong>
+            <p>Ejecuta el scraper para poblar esta sección.</p>
+          </div>
+        ) : (
+          <div className="opp-grid">
+            {scrapedOpps.map((opp) => (
+              <div key={opp.id} className={`opp-card ${opp.decision === 'go' ? 'go-card' : 'pend-card'}`}>
+                <div className="opp-top">
+                  <div style={{ flex: 1 }}>
+                    <a href={opp.url_rfp} target="_blank" rel="noopener noreferrer" className="opp-title" style={{ textDecoration: 'none', display: 'block' }}>
+                      {opp.title}
+                    </a>
+                    <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 4 }}>
+                      <span style={{ background: 'var(--blue-bg)', color: 'var(--blue)', padding: '2px 8px', borderRadius: 3, fontSize: 9.5, fontWeight: 600 }}>
+                        ◆ Scraping automático
+                      </span>
+                    </div>
+                  </div>
+                  {opp.score_total && (
+                    <div className={`score-circle ${scoreCircleCls(opp.score_total, opp.decision || 'pending')}`}>
+                      {opp.score_total}/10
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ fontSize: 11, color: 'var(--muted2)', margin: '10px 0' }}>
+                  <strong>Financiador:</strong> {opp.funder_name}
+                </div>
+
+                <div className="opp-links">
+                  <a
+                    href={opp.url_rfp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link-btn primary"
+                  >
+                    → Ver convocatoria
+                  </a>
+                </div>
+
+                <div style={{ background: 'var(--blue-bg)', border: '1px solid var(--blue-bdr)', borderRadius: 8, padding: '8px 10px', marginTop: 10, fontSize: '10.5px', color: 'var(--blue)', lineHeight: 1.5 }}>
+                  Oportunidad detectada automáticamente por el scraper nacional_colombia. Requiere validación manual.
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

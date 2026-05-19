@@ -21,6 +21,7 @@
   --amber-bg:  rgba(217,119,6,0.08);
   --blue:      #2563EB;
   --blue-bg:   rgba(37,99,235,0.08);
+  --blue-bdr:  rgba(37,99,235,0.2);
   --violet:    #7C3AED;
   --violet-bg: rgba(124,58,237,0.08);
   --accent:    #059669;
@@ -179,6 +180,7 @@ a { text-decoration: none; }
 .chip-warn { background: var(--amber-bg); color: var(--amber); border-color: rgba(251,191,36,0.3); }
 .chip-muted{ background: var(--bg3); color: var(--muted2); border-color: var(--border); }
 .chip-nogo { background: var(--nogo-bg); color: var(--nogo); border-color: rgba(248,113,113,0.3); }
+.chip-blue { background: var(--blue-bg); color: var(--blue); border-color: rgba(37,99,235,0.3); }
 
 /* ── Page area ────────────────────────────────────────────── */
 .page {

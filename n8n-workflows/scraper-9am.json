@@ -1,0 +1,115 @@
+{
+  "name": "Daily Scraper 9am — GrantFlow AI",
+  "nodes": [
+    {
+      "parameters": {
+        "trigger": "every",
+        "unit": "day",
+        "value": 1,
+        "triggerAtHour": 9,
+        "triggerAtMinute": 0
+      },
+      "id": "schedule-9am",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.cronTrigger",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/scrape/run",
+        "authentication": "headerAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ env.GRANTFLOW_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "run-scrapers",
+      "name": "Run All Scrapers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [350, 300],
+      "credentials": {
+        "httpHeaderAuth": "httpHeaderAuth"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/scrape/rescore",
+        "authentication": "headerAuth",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ env.GRANTFLOW_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "run-rescorer",
+      "name": "Run LLM Rescorer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "channel": "#dev-alerts",
+        "text": "=GrantFlow: Scraper run completed at {{ now.toISO() }}\n✓ Scrapers: {{ $nodes['run-scrapers'].json.total_persisted }}\n✓ Rescored: {{ $nodes['run-rescorer'].json.succeeded }}"
+      },
+      "id": "slack-notification",
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "schedule-9am": {
+      "main": [
+        [
+          {
+            "node": "run-scrapers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "run-scrapers": {
+      "main": [
+        [
+          {
+            "node": "run-rescorer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "run-rescorer": {
+      "main": [
+        [
+          {
+            "node": "slack-notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1"
+}

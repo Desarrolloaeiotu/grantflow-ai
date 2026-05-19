@@ -167,3 +167,51 @@ async def diagnose_scraper(
             "error": str(exc)[:500],
             "duration_sec": (datetime.now(timezone.utc) - started_at).total_seconds(),
         }
+
+
+@router.post("/rescore")
+async def run_rescorer(
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
+) -> dict:
+    """Ejecuta el motor de scoring LLM en oportunidades sin score.
+
+    Llamado por n8n después de que scrapers persistan datos nuevos.
+    Devuelve stats para alertas en Slack.
+    """
+    _check_api_key(x_api_key)
+
+    from app.scrapers.rescore import rescore_batch
+
+    started_at = datetime.now(timezone.utc)
+
+    try:
+        result = await rescore_batch()
+        completed_at = datetime.now(timezone.utc)
+        duration_sec = (completed_at - started_at).total_seconds()
+
+        logger.info(
+            "Rescore run complete",
+            total=result["total"],
+            succeeded=result["succeeded"],
+            failed=result["failed"],
+            duration_sec=duration_sec,
+        )
+
+        return {
+            "status": "success",
+            "total": result["total"],
+            "succeeded": result["succeeded"],
+            "failed": result["failed"],
+            "started_at": started_at.isoformat(),
+            "completed_at": completed_at.isoformat(),
+            "duration_sec": duration_sec,
+        }
+
+    except Exception as exc:
+        logger.error("Rescore failed", error=str(exc))
+        return {
+            "status": "error",
+            "error": str(exc)[:500],
+            "started_at": started_at.isoformat(),
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+        }

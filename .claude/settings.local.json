@@ -1,7 +1,52 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(.venv/Scripts/python.exe -m app.scrapers.rescore --limit 5)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalAddress, LocalPort, OwningProcess | ForEach-Object { $proc = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; [PSCustomObject]@{ PID=$_.OwningProcess; Name=$proc.ProcessName; StartTime=$proc.StartTime } })",
+      "Bash(curl -X POST -H 'Content-Type: application/json' --data '{\"text\":\"🎉 *GrantFlow AI conectado a Slack!*\\\\nWebhook funcionando correctamente desde tu máquina.\\\\nA partir de ahora las alertas del workflow llegarán aquí.\"}' https://hooks.slack.com/services/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)",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5678/)",
+      "Bash(docker exec *)",
+      "Bash(git -c user.email=jardinesaeiotu@gmail.com -c 'user.name=Luis Mendez' commit -m 'fix\\(s4\\): enable env var access in n8n nodes *)",
+      "Bash(cd frontend *)",
+      "Bash(python -m py_compile app/services/apollo_service.py app/api/contacts.py)",
+      "Bash(grep -E \"\\\\.\\(json|yaml|yml\\)$\")",
+      "Bash(python -m py_compile app/api/opportunities.py)",
+      "Bash(python -m app.scrapers.runner --source nacional_colombia)",
+      "Bash(python -m py_compile app/scrapers/nacional_colombia.py)",
+      "Bash(git commit -m 'fix\\(nacional-colombia\\): improve selectors and keyword filtering *)",
+      "Bash(git commit -m 'feat\\(api\\): add /scrape/diagnose endpoint for scraper debugging *)",
+      "Bash(python -m pip install -q -e .)",
+      "Bash(python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload)",
+      "Bash(git commit -m 'feat\\(nacional-colombia\\): add SECOP/Cajas/RSS feeds scraping *)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/scrape/diagnose?source=nacional_colombia\")",
+      "Bash(python -m json.tool)",
+      "Bash(git commit -m 'feat\\(nacional-colombia\\): add universities and foundations sources *)",
+      "Bash(curl -s http://localhost:8000/api/v1/scrape/sources)",
+      "Bash(curl -s http://localhost:8000/api/v1/scrape/sources -w \"\\\\nHTTP Status: %{http_code}\\\\n\")",
+      "Bash(curl -s -X POST \"http://localhost:8000/api/v1/scrape/run?source=nacional_colombia\")",
+      "Bash(curl -X POST https://hooks.slack.com/services/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 -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(python -m app.scrapers.clean_db)",
+      "Bash(git commit -m ' *)",
+      "Bash(python -m app.scrapers.nacional_colombia)",
+      "Bash(python test_scraper.py)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/opportunities?source=nacional_colombia&window=funding_colombia&size=100\")",
+      "Bash(curl -v \"http://localhost:8000/api/v1/opportunities?source=nacional_colombia&window=funding_colombia&size=100\")",
+      "Bash(python -m alembic upgrade head)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/dashboard/metrics\")",
+      "Bash(psql \"postgresql://postgres:postgres@localhost:5432/grantflow\" -c \"\\\\dt\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/opportunities\")",
+      "Bash(pkill -f \"uvicorn main:app\")",
+      "PowerShell(Stop-Process -Name python -ErrorAction SilentlyContinue)",
+      "PowerShell(\"Stopped Python processes\")",
+      "Bash(curl -s \"http://localhost:8000/health\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/opportunities?source=nacional_colombia&window=funding_colombia&size=10\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/opportunities?source=nacional_colombia&size=10\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Luis Mendez\\.claude\\projects\\c--Users-Luis-Mendez-OneDrive---Fundaci-n-Carulla---Aeiotu-Escritorio-Grantflow-app\\memory"
     ]
   }
 }
