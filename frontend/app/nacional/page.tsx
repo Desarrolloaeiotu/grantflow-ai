@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { NATIONAL_OPPS, type NationalOpp } from '../lib/nationalOpps'
+import RunScraperButton from '../components/RunScraperButton'
 
 interface ScrapedOpp {
   id: string
@@ -428,6 +429,8 @@ export default function NacionalPage() {
             Oportunidades detectadas por scraping <em>— ICBF, Google News + otras fuentes</em>
           </h2>
         </div>
+
+        <RunScraperButton source="nacional_colombia" label="▶ Ejecutar Scraper Nacional" />
 
         {loading ? (
           <div className="empty-state">

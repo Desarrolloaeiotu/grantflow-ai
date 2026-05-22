@@ -64,7 +64,8 @@
       "Bash(python -c \"from app.main import app; print\\('✓ Import successful'\\)\")",
       "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); from app.main import app; print\\('✓ Import successful'\\)\")",
       "Bash(python -m uvicorn main:app --reload --port 8000)",
-      "Bash(curl -X POST http://localhost:8000/api/v1/chat -H 'Content-Type: application/json' -d '{\"message\":\"hola\",\"history\":[]}')"
+      "Bash(curl -X POST http://localhost:8000/api/v1/chat -H 'Content-Type: application/json' -d '{\"message\":\"hola\",\"history\":[]}')",
+      "Bash(git restore *)"
     ]
   }
 }

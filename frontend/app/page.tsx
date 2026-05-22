@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import SearchBar from './components/SearchBar'
+import ScraperControls from './components/ScraperControls'
 
 interface Opportunity {
   id: string
@@ -214,6 +215,11 @@ export default async function OpportunitiesPage({
           {list && <span style={{ color: 'var(--muted2)' }}>— {list.total} oportunidades</span>}
         </div>
       )}
+
+      {/* Controles de scraper */}
+      <div style={{ marginTop: 20, paddingBottom: 8 }}>
+        <ScraperControls source="grantsgov" title="Ejecutar Scraper Global" />
+      </div>
 
       {/* Filtros — decisión */}
       <div className="filters" style={{ marginTop: 20 }}>
