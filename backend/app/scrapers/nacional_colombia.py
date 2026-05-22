@@ -35,31 +35,35 @@ from app.scrapers.base import BaseScraper, ScraperError
 
 logger = structlog.get_logger()
 
-# Palabras clave HIGH SPECIFICITY para Nacional Colombia
-NACIONAL_KEYWORDS = (
+# Palabras clave CORE para Nacional Colombia
+# Dividida en CORE (muy relevante) y SECONDARY (moderadamente relevante)
+NACIONAL_KEYWORDS_CORE = (
     # Primera infancia / ECD
     "primera infancia", "educación inicial", "educación preescolar",
     "desarrollo infantil", "desarrollo temprano", "cero a siempre",
-    "early childhood", "ecd", "preschool",
+    "early childhood", "ecd", "preschool", "preescolar",
 
     # CDI y operación
     "cdi", "centro de desarrollo infantil", "centros infantiles",
+    "jardines", "jardín", "jardines infantiles",
     "modalidad institucional", "modalidad familiar",
     "cuidado infantil", "cuidadores",
 
     # Docentes y formación de líderes
-    "formación docente", "capacitación docentes",
+    "formación docente", "capacitación docentes", "docentes",
     "acompañamiento pedagógico", "asesoría pedagógica",
     "fortalecimiento de capacidades", "líderes educativos",
+    "maestros", "maestras", "educadores",
 
     # Política pública y transformación sistémica
     "cero a siempre", "política pública", "política educativa",
-    "estándares icbf", "lineamientos", "orientaciones mineducación",
+    "estándares icbf", "icbf", "lineamientos", "orientaciones",
     "incidencia política", "transformación sistémica",
+    "modelo", "programa", "proyecto educativo",
 
     # Cajas de compensación (aliados clave)
     "cafam", "caja de compensación", "cajas de compensación",
-    "afiliados", "beneficiarios",
+    "afiliados", "beneficiarios", "compensación",
 
     # Economía del cuidado
     "economía del cuidado", "sostenibilidad financiera",
@@ -67,15 +71,40 @@ NACIONAL_KEYWORDS = (
 
     # Empoderamiento femenino
     "empoderamiento femenino", "women empowerment",
-    "género", "gender", "mujeres",
+    "género", "gender", "mujeres", "equity",
 
     # MEAL y trayectorias
     "monitoreo y evaluación", "sistematización",
     "trayectorias educativas", "continuidad educativa",
+    "evaluación", "medición", "indicadores",
 
     # Modelo y transferencia
     "modelo escalable", "transferencia de modelo", "replicación",
+    "escalable", "transferencia", "replicación",
 )
+
+NACIONAL_KEYWORDS_SECONDARY = (
+    # Educación general (si es combinada con educación inicial)
+    "educación", "enseñanza", "aprendizaje", "pedagogía",
+    "escuela", "formación", "capacitación",
+
+    # Infancia y vulnerabilidad
+    "infancia", "niños", "niñas", "menores", "infantes",
+    "vulnerabilidad", "riesgo", "desplazamiento",
+    "pobreza", "pobreza extrema",
+
+    # Salud y bienestar
+    "salud", "nutrición", "bienestar", "cuidado",
+    "desarrollo", "psicosocial",
+
+    # Financiamiento y operación
+    "convocatoria", "llamado", "oportunidad", "beca",
+    "financiamiento", "recursos", "subsidio",
+    "operación", "ejecución", "implementación",
+)
+
+# Combinar todas las palabras clave
+NACIONAL_KEYWORDS = NACIONAL_KEYWORDS_CORE + NACIONAL_KEYWORDS_SECONDARY
 
 USER_AGENT = "Mozilla/5.0 (compatible; GrantFlow-AI/1.0; +https://aeiotu.org)"
 
@@ -124,6 +153,18 @@ class NacionalColombiaScraper(BaseScraper):
             foundation_items = await self._fetch_foundations(client)
             all_items.extend(foundation_items)
 
+            # Fuente 8: Google News y alertas públicas
+            google_items = await self._fetch_google_news_alerts(client)
+            all_items.extend(google_items)
+
+            # Fuente 9: LinkedIn job postings relacionadas con oportunidades
+            linkedin_items = await self._fetch_linkedin_opportunities(client)
+            all_items.extend(linkedin_items)
+
+            # Fuente 10: Twitter/X para anuncios de oportunidades
+            twitter_items = await self._fetch_twitter_opportunities(client)
+            all_items.extend(twitter_items)
+
         logger.info(
             "Nacional Colombia fetch complete",
             total=len(all_items),
@@ -134,6 +175,9 @@ class NacionalColombiaScraper(BaseScraper):
             rss=len(rss_items) if rss_items else 0,
             universities=len(uni_items) if uni_items else 0,
             foundations=len(foundation_items) if foundation_items else 0,
+            google=len(google_items) if google_items else 0,
+            linkedin=len(linkedin_items) if linkedin_items else 0,
+            twitter=len(twitter_items) if twitter_items else 0,
         )
         return all_items
 
@@ -240,81 +284,132 @@ class NacionalColombiaScraper(BaseScraper):
 
         SECOP es la fuente oficial de contratos públicos en Colombia.
         Busca procesos abiertos de contratación en educación inicial.
+        Utiliza la API oficial de SECOP para máxima confiabilidad.
         """
         items = []
 
         # Búsqueda con múltiples términos para máxima cobertura
         search_terms = [
-            ("educación inicial", "primary"),
-            ("primera infancia", "primary"),
-            ("CDI", "primary"),
-            ("formación docente", "secondary"),
-            ("desarrollo infantil", "secondary"),
-            ("acompañamiento pedagógico", "secondary"),
+            "educación inicial",
+            "primera infancia",
+            "CDI",
+            "formación docente",
+            "desarrollo infantil",
+            "acompañamiento pedagógico",
+            "jardines infantiles",
+            "centro de desarrollo infantil",
         ]
 
-        for term, priority in search_terms:
-            # Intentar múltiples endpoints SECOP
-            urls = [
-                "https://www.contratos.gov.co/consultar/buscador",
-                "https://www.contratos.gov.co/search",
-            ]
+        # Usar API oficial de SECOP (versión 1.0)
+        api_base = "https://www.contratos.gov.co/api/v1/search"
 
-            for base_url in urls:
-                params = {
-                    "buscador": term,
-                    "estado": "Publicada",
-                    "pp": 100,
-                }
+        for term in search_terms:
+            params = {
+                "q": term,
+                "filter": "status:publicada",
+                "size": 50,
+                "desde": 0,
+            }
+
+            try:
+                resp = await client.get(api_base, params=params, timeout=15)
+                if resp.status_code == 404:
+                    logger.debug("SECOP API endpoint not available, trying fallback HTML scraping")
+                    # Fallback a búsqueda web directa
+                    items.extend(await self._fetch_secop_web_fallback(client, term))
+                    continue
+
+                resp.raise_for_status()
 
                 try:
-                    resp = await client.get(base_url, params=params, timeout=15)
-                    resp.raise_for_status()
-                    soup = BeautifulSoup(resp.text, "lxml")
+                    data = resp.json()
+                    results = data.get("data", [])
 
-                    # Selectores amplios para diferentes versiones de SECOP
-                    results = soup.select(
-                        "div.resultado, div.result, tr[data-id], "
-                        ".proceso-item, .licitacion-item, "
-                        "table tbody tr, .search-result"
-                    )
-
-                    page_items = 0
-                    for result in results[:50]:
-                        # Extraer título y URL
-                        link = result.select_one("a[href*='consultar'], a[href*='process']") or result.select_one("a")
-                        if not link:
-                            continue
-
-                        href = link.get("href", "").strip()
-                        title_elem = result.select_one("h3, h4, h5, .title, td:nth-child(1)") or link
-                        title = title_elem.get_text(strip=True) if title_elem else ""
-
-                        # Validar URL y título
+                    for result in results[:20]:
+                        title = result.get("procesosContratacion", [{}])[0].get("nombreProceso", "").strip()
                         if not title or len(title) < 10:
                             continue
-                        if not href or not href.startswith("http"):
-                            if href.startswith("/"):
-                                href = "https://www.contratos.gov.co" + href
-                            else:
-                                continue
+
+                        # URL de visualización del proceso
+                        process_id = result.get("procesosContratacion", [{}])[0].get("id", "")
+                        url = f"https://www.contratos.gov.co/consultar/detalle/{process_id}" if process_id else ""
+
+                        if not url:
+                            continue
 
                         items.append({
                             "title": title,
-                            "url": href,
+                            "url": url,
                             "source": "secop",
                             "funder": "Entidad pública colombiana (SECOP)",
                             "search_term": term,
-                            "priority": priority,
+                            "deadline_text": result.get("fechaCierre", ""),
                         })
-                        page_items += 1
 
-                    if page_items > 0:
-                        logger.info("SECOP search completed", term=term, base_url=base_url, results=page_items, total=len(items))
-                        break  # Si encontró resultados en este endpoint, no probar el siguiente
-                except httpx.HTTPError as exc:
-                    logger.debug("SECOP endpoint failed", term=term, url=base_url, error=str(exc)[:100])
+                    if len(items) > 0:
+                        logger.info("SECOP API search completed", term=term, results=len(items))
+
+                except (json.JSONDecodeError, KeyError) as e:
+                    logger.debug("SECOP API response parse error", term=term, error=str(e)[:100])
+                    # Fallback a búsqueda HTML si JSON falla
+                    items.extend(await self._fetch_secop_web_fallback(client, term))
+
+            except httpx.HTTPError as exc:
+                logger.debug("SECOP API request failed", term=term, error=str(exc)[:100])
+                continue
+
+        return items
+
+    async def _fetch_secop_web_fallback(self, client: httpx.AsyncClient, term: str) -> list[dict[str, Any]]:
+        """Fallback a búsqueda HTML en SECOP si la API no funciona."""
+        items = []
+
+        # Intentar búsqueda web como fallback
+        search_url = "https://www.contratos.gov.co/consultar/buscador"
+        params = {
+            "buscador": term,
+            "estado": "Publicada",
+        }
+
+        try:
+            resp = await client.get(search_url, params=params, timeout=15)
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, "lxml")
+
+            # Buscar resultados en múltiples selectores posibles
+            results = soup.select(
+                "div[class*='result'], tr[data-id], "
+                "a[href*='detalle'], .proceso-item"
+            )
+
+            for result in results[:15]:
+                title = result.get_text(strip=True)
+                if not title or len(title) < 10:
                     continue
+
+                link = result.select_one("a[href*='detalle']") or result.select_one("a")
+                if not link:
+                    continue
+
+                href = link.get("href", "").strip()
+                if not href.startswith("http"):
+                    if href.startswith("/"):
+                        href = "https://www.contratos.gov.co" + href
+                    else:
+                        continue
+
+                items.append({
+                    "title": title[:200],
+                    "url": href,
+                    "source": "secop",
+                    "funder": "Entidad pública colombiana (SECOP)",
+                    "search_term": term,
+                })
+
+            if items:
+                logger.info("SECOP web fallback succeeded", term=term, results=len(items))
+        except httpx.HTTPError as exc:
+            logger.debug("SECOP web fallback failed", term=term, error=str(exc)[:100])
 
         return items
 
@@ -680,10 +775,199 @@ class NacionalColombiaScraper(BaseScraper):
             logger.info("Foundations scraped", results=len(items))
         return items
 
+    async def _fetch_google_news_alerts(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
+        """Busca alertas públicas de Google News sobre oportunidades en educación inicial.
+
+        Google News es una fuente valiosa para anuncios de convocatorias, cambios en política
+        pública y nuevos programas de educación inicial en Colombia.
+        """
+        items = []
+
+        search_queries = [
+            "educación inicial colombia convocatoria",
+            "primera infancia colombia oportunidades",
+            "cdis colombia financiamiento",
+            "formación docentes colombia",
+            "jardines infantiles convocatoria",
+            "cero a siempre colombia",
+            "icbf convocatorias colombia",
+            "mineducación educación inicial",
+        ]
+
+        for query in search_queries:
+            try:
+                # Google News RSS feed
+                rss_url = f"https://news.google.com/rss/search?q={query}+colombia&ceid=CO:es&hl=es"
+
+                resp = await client.get(rss_url, timeout=15)
+                resp.raise_for_status()
+
+                try:
+                    root = ET.fromstring(resp.content)
+                    items_in_feed = root.findall(".//item")
+
+                    for item_elem in items_in_feed[:5]:
+                        title_elem = item_elem.find("title")
+                        link_elem = item_elem.find("link")
+                        desc_elem = item_elem.find("description")
+
+                        if title_elem is None or link_elem is None:
+                            continue
+
+                        title = title_elem.text or ""
+                        link = link_elem.text or ""
+                        desc = desc_elem.text or "" if desc_elem is not None else ""
+
+                        if not title or not link or len(title) < 15:
+                            continue
+
+                        items.append({
+                            "title": title[:200],
+                            "url": link,
+                            "source": "google_news",
+                            "funder": "Fuente pública Colombia (Google News)",
+                            "description": desc[:500],
+                            "search_query": query,
+                        })
+
+                except ET.ParseError:
+                    logger.debug("Google News RSS parse error", query=query)
+                    continue
+
+            except httpx.HTTPError as exc:
+                logger.debug("Google News fetch failed", query=query, error=str(exc)[:100])
+                continue
+
+        if items:
+            logger.info("Google News alerts scraped", results=len(items))
+        return items
+
+    async def _fetch_linkedin_opportunities(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
+        """Busca oportunidades en LinkedIn relacionadas con educación inicial.
+
+        LinkedIn a menudo publica ofertas de trabajo y oportunidades de consultoría
+        relacionadas con educación inicial y primera infancia.
+        """
+        items = []
+
+        # LinkedIn no permite scraping directo, pero las búsquedas públicas de Google
+        # indexan perfiles y publicaciones de LinkedIn
+        linkedin_queries = [
+            "site:linkedin.com educación inicial colombia",
+            "site:linkedin.com first childhood development colombia",
+            "site:linkedin.com ECDinnovation colombia",
+            "site:linkedin.com jardinería colombia convocatoria",
+        ]
+
+        for query in linkedin_queries:
+            try:
+                # Usar búsqueda pública de Google para LinkedIn
+                search_url = "https://www.google.com/search"
+                params = {
+                    "q": query,
+                    "tbm": "nws",  # News tab para resultados recientes
+                }
+
+                resp = await client.get(search_url, params=params, timeout=15)
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.text, "lxml")
+
+                # Buscar links en resultados de búsqueda
+                links = soup.select("a[href*='linkedin.com'], a[href*='jobs']")
+
+                for link in links[:5]:
+                    href = link.get("href", "").strip()
+                    title = link.get_text(strip=True)
+
+                    if not href or not title or len(title) < 10:
+                        continue
+
+                    # Limpiar URLs de búsqueda
+                    if "url=" in href:
+                        href = href.split("url=")[1].split("&")[0]
+                    if not href.startswith("http"):
+                        continue
+
+                    items.append({
+                        "title": title[:200],
+                        "url": href,
+                        "source": "linkedin",
+                        "funder": "LinkedIn / Profesionales",
+                        "search_query": query,
+                    })
+
+            except httpx.HTTPError as exc:
+                logger.debug("LinkedIn opportunity search failed", query=query, error=str(exc)[:100])
+                continue
+
+        if items:
+            logger.info("LinkedIn opportunities found", results=len(items))
+        return items
+
+    async def _fetch_twitter_opportunities(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
+        """Busca oportunidades anunciadas en Twitter/X.
+
+        Organizaciones, gobiernos y fundaciones frecuentemente anuncian
+        convocatorias y oportunidades en Twitter.
+        """
+        items = []
+
+        # Twitter/X también es accesible vía búsqueda pública de Google
+        twitter_queries = [
+            'site:twitter.com OR site:x.com "educación inicial" colombia convocatoria',
+            'site:twitter.com OR site:x.com "primera infancia" colombia oportunidad',
+            'site:twitter.com OR site:x.com icbf convocatoria',
+            'site:twitter.com OR site:x.com "cero a siempre" convocatoria',
+        ]
+
+        for query in twitter_queries:
+            try:
+                search_url = "https://www.google.com/search"
+                params = {
+                    "q": query,
+                    "tbm": "nws",  # News tab para tweets recientes
+                }
+
+                resp = await client.get(search_url, params=params, timeout=15)
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.text, "lxml")
+
+                links = soup.select("a[href*='twitter.com'], a[href*='x.com']")
+
+                for link in links[:5]:
+                    href = link.get("href", "").strip()
+                    title = link.get_text(strip=True)
+
+                    if not href or not title or len(title) < 15:
+                        continue
+
+                    # Limpiar URLs de búsqueda
+                    if "url=" in href:
+                        href = href.split("url=")[1].split("&")[0]
+                    if not href.startswith("http"):
+                        continue
+
+                    items.append({
+                        "title": title[:200],
+                        "url": href,
+                        "source": "twitter",
+                        "funder": "Anuncio público (Twitter/X)",
+                        "search_query": query,
+                    })
+
+            except httpx.HTTPError as exc:
+                logger.debug("Twitter opportunity search failed", query=query, error=str(exc)[:100])
+                continue
+
+        if items:
+            logger.info("Twitter/X opportunities found", results=len(items))
+        return items
+
     def normalize(self, raw: dict[str, Any]) -> OpportunityCreate | None:
         """Convierte registro crudo a OpportunityCreate.
 
         Filtra por relevancia a primera infancia/educación inicial.
+        Lógica simplificada para máxima cobertura sin sacrificar calidad.
         """
         title = raw.get("title", "").strip()
         if not title or len(title) < 10:
@@ -693,30 +977,48 @@ class NacionalColombiaScraper(BaseScraper):
         if not url or not url.startswith("http"):
             return None
 
-        # Buscar descripción en la página (opcional)
         description = raw.get("description", "")
+        source = raw.get("source", "unknown")
 
-        # Filtro de relevancia: REQUERIDO contener al menos una palabra clave
+        # Texto para análisis
         haystack = (title + " " + url + " " + description).lower()
 
-        # Rechazar explícitamente si contiene palabras de selección/RRHH
+        # BLOQUEAR: palabras clave explícitamente NO relevantes
         reject_keywords = (
-            "seleccion", "personal", "cnsc", "rrhh", "empleo",
-            "vacante", "puesto", "candidato", "cv",
-            "error", "404", "no encontrado"
+            "seleccion", "convocatoria puesto", "rrhh",
+            "empleo", "vacante", "carrera", "candidato",
+            "error", "404", "no encontrado", "página no disponible"
         )
         if any(kw in haystack for kw in reject_keywords):
             logger.debug("Nacional opp rejected", title=title[:60], reason="reject_keyword")
             return None
 
-        # REQUERIDO: contener al menos una palabra clave positiva
-        if not any(kw in haystack for kw in NACIONAL_KEYWORDS):
-            logger.debug("Nacional opp rejected", title=title[:60], reason="no_positive_keyword")
-            return None
+        # LÓGICA DE ACEPTACIÓN (mejorada y menos restrictiva):
+        # 1. Si viene de fuente oficial (ICBF, MinEducación, SECOP), ACEPTAR sin más filtros
+        official_sources = ("icbf", "mineducacion", "secop", "gobierno")
+        if source in official_sources or any(src in haystack for src in official_sources):
+            logger.debug("Nacional opp accepted", title=title[:60], reason="official_source")
+            # Ir directamente a crear oportunidad
+        else:
+            # 2. Si NO es fuente oficial, aplicar filtro de keywords más flexible:
+            #    - Aceptar si contiene 1+ palabra clave CORE (muy específica)
+            #    - O aceptar si contiene 2+ palabras clave SECONDARY (general)
+            core_matches = sum(1 for kw in NACIONAL_KEYWORDS_CORE if kw in haystack)
+            secondary_matches = sum(1 for kw in NACIONAL_KEYWORDS_SECONDARY if kw in haystack)
 
-        logger.debug("Nacional opp accepted", title=title[:60])
+            if core_matches >= 1:
+                logger.debug("Nacional opp accepted", title=title[:60], reason=f"core_keyword({core_matches})")
+            elif secondary_matches >= 2:
+                logger.debug("Nacional opp accepted", title=title[:60], reason=f"secondary_keywords({secondary_matches})")
+            else:
+                logger.debug(
+                    "Nacional opp rejected",
+                    title=title[:60],
+                    reason=f"insufficient_keywords(core={core_matches}, secondary={secondary_matches})"
+                )
+                return None
 
-        # Parseear deadline si existe (formato flexible)
+        # Parse deadline si existe
         deadline = self._parse_deadline(raw.get("deadline_text"))
 
         return OpportunityCreate(

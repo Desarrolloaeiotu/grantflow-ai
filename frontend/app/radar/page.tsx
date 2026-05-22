@@ -19,7 +19,7 @@ interface Metrics {
 
 async function getSourceStats(): Promise<SourceStats[]> {
   try {
-    const res = await fetch(`${process.env.API_URL}/api/v1/dashboard/sources`, { cache: 'no-store' })
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/dashboard/sources`, { cache: 'no-store' })
     if (!res.ok) return []
     return res.json()
   } catch { return [] }
@@ -27,7 +27,7 @@ async function getSourceStats(): Promise<SourceStats[]> {
 
 async function getMetrics(): Promise<Metrics | null> {
   try {
-    const res = await fetch(`${process.env.API_URL}/api/v1/dashboard/metrics`, { cache: 'no-store' })
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/dashboard/metrics`, { cache: 'no-store' })
     if (!res.ok) return null
     return res.json()
   } catch { return null }

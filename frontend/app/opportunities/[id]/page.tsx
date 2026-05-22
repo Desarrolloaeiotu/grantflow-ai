@@ -48,7 +48,7 @@ interface OpportunityListItem {
 
 async function getOpp(id: string): Promise<OpportunityDetail | null> {
   try {
-    const res = await fetch(`${process.env.API_URL}/api/v1/opportunities/${id}`, { cache: 'no-store' })
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/opportunities/${id}`, { cache: 'no-store' })
     if (!res.ok) return null
     return res.json()
   } catch { return null }
@@ -58,7 +58,7 @@ async function getRelated(source: string | null, opportunityId: string): Promise
   if (!source) return []
   try {
     const params = new URLSearchParams({ size: '5', source })
-    const res = await fetch(`${process.env.API_URL}/api/v1/opportunities?${params}`, { cache: 'no-store' })
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/opportunities?${params}`, { cache: 'no-store' })
     if (!res.ok) return []
     const data = await res.json()
     return (data.items ?? []).filter((o: OpportunityListItem) => o.id !== opportunityId).slice(0, 4)

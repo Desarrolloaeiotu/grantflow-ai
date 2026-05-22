@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.security import require_api_key
 from app.models.contact import Contact
 from app.schemas.contact import ContactRead, EmailVerifyRequest
 
@@ -24,7 +25,7 @@ async def list_contacts(
 
 
 @router.post("/verify")
-async def verify_email(body: EmailVerifyRequest) -> dict:
+async def verify_email(body: EmailVerifyRequest, _auth: None = Depends(require_api_key)) -> dict:
     """Verify an email address using Apollo.io."""
     from app.services.apollo_service import apollo
 

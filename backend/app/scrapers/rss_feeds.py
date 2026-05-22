@@ -338,10 +338,9 @@ class RssFeedsScraper(BaseScraper):
 
         haystack = (title + " " + description).lower()
 
-        # Filtro AND: al menos 1 CORE + al menos 1 GEO
+        # Filtro: al menos 1 CORE_KEYWORD (aceptar sin GEO para feeds globales)
         has_core = any(kw.lower() in haystack for kw in CORE_KEYWORDS)
-        has_geo = any(kw.lower() in haystack for kw in GEO_KEYWORDS)
-        if not (has_core and has_geo):
+        if not has_core:
             return None
 
         url_rfp = entry.get("link") or entry.get("id")

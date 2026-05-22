@@ -19,6 +19,7 @@ class OpportunityCreate(BaseModel):
     eligible_countries: list[str] = Field(default_factory=list)
     sectors: list[str] = Field(default_factory=list)
     capital_type: str | None = "grant"
+    market_window: str | None = None  # funding_colombia|funding_global|strategic|latam
     raw_content: str | None = None
 
 

@@ -30,3 +30,10 @@ class FunderRead(BaseModel):
     has_history: bool
     notes: str | None
     created_at: datetime
+
+
+class FunderList(BaseModel):
+    items: list[FunderRead]
+    total: int
+    page: int = 1
+    size: int = 25

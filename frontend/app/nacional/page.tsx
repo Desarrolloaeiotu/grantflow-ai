@@ -55,6 +55,28 @@ export default function NacionalPage() {
   const searchParams = useSearchParams()
   const [scrapedOpps, setScrapedOpps] = useState<ScrapedOpp[]>([])
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
+
+  const handleExportCSV = async () => {
+    setExporting(true)
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const res = await fetch(`${apiUrl}/api/v1/opportunities/export?decision=`)
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `grantflow_colombia_${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Export error:', err)
+      alert('Error al exportar. Verifica que el backend esté activo.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const filter = searchParams.get('filter') ?? 'all'
 
@@ -109,6 +131,23 @@ export default function NacionalPage() {
         <span className="chip chip-warn">Pendiente: {totalPending}</span>
         <span className="chip chip-muted">Curadas: {NATIONAL_OPPS.length}</span>
         <span className="chip chip-blue">Detectadas: {totalScraped}</span>
+        <button
+          onClick={handleExportCSV}
+          disabled={exporting}
+          style={{
+            marginLeft: 'auto',
+            padding: '6px 14px',
+            background: exporting ? '#9ca3af' : '#2563eb',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: exporting ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {exporting ? 'Exportando…' : '⬇ Descargar CSV'}
+        </button>
       </div>
 
       {/* KPIs */}

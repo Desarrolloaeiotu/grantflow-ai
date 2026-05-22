@@ -120,10 +120,9 @@ class DevelopmentAidScraper(BaseScraper):
         description = raw.get("snippet", "")
         haystack = (title + " " + description).lower()
 
-        # Filtro AND: al menos 1 CORE + al menos 1 GEO
+        # Filtro: al menos 1 CORE_KEYWORD (DevelopmentAid es agregador global)
         has_core = any(kw.lower() in haystack for kw in CORE_KEYWORDS)
-        has_geo = any(kw.lower() in haystack for kw in GEO_KEYWORDS)
-        if not (has_core and has_geo):
+        if not has_core:
             return None
 
         return OpportunityCreate(

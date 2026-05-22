@@ -21,7 +21,6 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # Extensiones requeridas
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
-    op.execute("CREATE EXTENSION IF NOT EXISTS pg_cron")
 
     # ── funders ───────────────────────────────────────────────────────────────
     op.create_table(
@@ -184,4 +183,5 @@ def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS idx_opp_embedding")
     op.drop_table("opportunities")
     op.drop_table("funders")
+    op.execute("DROP EXTENSION IF EXISTS pg_cron")
     op.execute("DROP EXTENSION IF EXISTS vector")

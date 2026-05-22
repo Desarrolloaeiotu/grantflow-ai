@@ -126,13 +126,12 @@ class GrantsGovScraper(BaseScraper):
         if not title:
             return None
 
-        # Filtro AND: al menos 1 CORE_KEYWORD + al menos 1 GEO_KEYWORD
+        # Filtro: al menos 1 CORE_KEYWORD (GEO no es requerido para Grants.gov,
+        # ya que busca oportunidades globales de US agencies)
         text_to_search = (title + " " + (raw.get("agency") or "")).lower()
         has_core = any(kw.lower() in text_to_search for kw in CORE_KEYWORDS)
-        has_geo = any(kw.lower() in text_to_search for kw in GEO_KEYWORDS)
 
-        if not (has_core and has_geo):
-            # No cumple los criterios de relevancia
+        if not has_core:
             return None
 
         # Fecha límite

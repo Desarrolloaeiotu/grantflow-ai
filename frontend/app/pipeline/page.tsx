@@ -17,7 +17,7 @@ interface Opportunity {
 async function getGoOpportunities(): Promise<Opportunity[]> {
   try {
     const res = await fetch(
-      `${process.env.API_URL}/api/v1/opportunities?decision=go&size=50`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/opportunities?decision=go&size=50`,
       { cache: 'no-store' }
     )
     if (!res.ok) return []

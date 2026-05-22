@@ -28,7 +28,7 @@ interface OpportunityList {
 async function fetchOpps(filters: Record<string, string>): Promise<OpportunityList> {
   try {
     const params = new URLSearchParams({ size: '50', ...filters })
-    const res = await fetch(`${process.env.API_URL}/api/v1/opportunities?${params}`, { cache: 'no-store' })
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/opportunities?${params}`, { cache: 'no-store' })
     if (!res.ok) return { items: [], total: 0 }
     return res.json()
   } catch { return { items: [], total: 0 } }

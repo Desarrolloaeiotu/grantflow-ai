@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.security import require_api_key
 from app.models.opportunity import Opportunity
 from app.schemas.opportunity import OpportunityList, OpportunityRead, OpportunityUpdate
 
@@ -29,6 +30,8 @@ async def list_opportunities(
     page: int = Query(1, ge=1),
     size: int = Query(25, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    authorization: str | None = Query(None, alias="Authorization"),
+    _auth: None = Depends(require_api_key),
 ) -> OpportunityList:
     from datetime import date, timedelta
 
@@ -95,7 +98,11 @@ def _safe_get_score_details(score_details: dict | None, key: str, default: str =
 
 @router.get("/export")
 async def export_opportunities(
-    decision: str | None = Query("go", description="Filtrar por decisión. Vacío = todas."),
+    decision: str | None = Query(None, description="Filtrar por decisión: go|no_go|pending. Vacío = todas."),
+    window: str | None = Query(None, description="Ventana de mercado: funding_colombia|funding_global|strategic|latam"),
+    urgency: str | None = Query(None, description="Urgencia: high|medium|low"),
+    source: str | None = Query(None, description="Fuente: grantsgov|bid|unwomen|nacional_colombia|rss"),
+    status: str | None = Query(None, description="Estado: detected|reviewed|in_crm|discarded"),
     verified_only: bool = Query(
         False, description="Solo opps con al menos un email verificado (org o CEO)"
     ),
@@ -120,6 +127,14 @@ async def export_opportunities(
     q = select(Opportunity).options(joinedload(Opportunity.funder))
     if decision:
         q = q.where(Opportunity.decision == decision)
+    if window:
+        q = q.where(Opportunity.market_window == window)
+    if urgency:
+        q = q.where(Opportunity.urgency == urgency)
+    if source:
+        q = q.where(Opportunity.source_name == source)
+    if status:
+        q = q.where(Opportunity.status == status)
     if min_score is not None:
         q = q.where(Opportunity.score_total >= min_score)
     q = q.order_by(Opportunity.score_total.desc().nullslast(), Opportunity.deadline.asc().nullslast())
@@ -227,7 +242,10 @@ async def export_opportunities(
         ])
 
     output.seek(0)
-    filename = f"grantflow_opportunities_{decision or 'all'}.csv"
+    from datetime import datetime
+    parts = [decision or "all", window or "", urgency or ""]
+    suffix = "_".join(p for p in parts if p)
+    filename = f"grantflow_{suffix}_{datetime.now().strftime('%Y%m%d')}.csv"
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv; charset=utf-8",
@@ -250,6 +268,7 @@ async def update_opportunity_status(
     opportunity_id: uuid.UUID,
     body: OpportunityUpdate,
     db: AsyncSession = Depends(get_db),
+    _auth: None = Depends(require_api_key),
 ) -> OpportunityRead:
     opp = await db.get(Opportunity, opportunity_id)
     if not opp:

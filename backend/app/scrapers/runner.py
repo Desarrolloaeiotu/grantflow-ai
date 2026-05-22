@@ -97,6 +97,7 @@ async def run_scraper(name: str, do_score: bool = False) -> int:
                 source_name=opp_create.source_name,
                 org_website=opp_create.org_website,
                 capital_type=opp_create.capital_type,
+                market_window=opp_create.market_window,
                 raw_content=opp_create.raw_content,
                 status="detected",
             )
