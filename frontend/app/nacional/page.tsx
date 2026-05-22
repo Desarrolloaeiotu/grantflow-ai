@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { NATIONAL_OPPS, type NationalOpp } from '../lib/nationalOpps'
-import RunScraperButton from '../components/RunScraperButton'
 
 interface ScrapedOpp {
   id: string
@@ -127,6 +126,38 @@ export default function NacionalPage() {
       <div className="topbar" style={{ margin: '-20px -24px 0', width: 'calc(100% + 48px)' }}>
         <div className="topbar-title">
           Nacional Colombia <span>— oportunidades estratégicas 2026 + detectadas</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={async () => {
+              try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+                const res = await fetch(`${apiUrl}/api/v1/scrape/run?source=nacional_colombia`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                })
+                if (res.ok) {
+                  setTimeout(() => window.location.reload(), 1000)
+                }
+              } catch (err) {
+                console.error('Scraper error:', err)
+              }
+            }}
+            style={{
+              padding: '5px 12px',
+              background: '#059669',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 5,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+            title="Ejecuta el scraper automático para detectar nuevas oportunidades"
+          >
+            ▶ Scraper
+          </button>
         </div>
         <span className="chip chip-go">GO: {totalGo}</span>
         <span className="chip chip-warn">Pendiente: {totalPending}</span>
@@ -429,8 +460,6 @@ export default function NacionalPage() {
             Oportunidades detectadas por scraping <em>— ICBF, Google News + otras fuentes</em>
           </h2>
         </div>
-
-        <RunScraperButton source="nacional_colombia" label="▶ Ejecutar Scraper Nacional" />
 
         {loading ? (
           <div className="empty-state">
