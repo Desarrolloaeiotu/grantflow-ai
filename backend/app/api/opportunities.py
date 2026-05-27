@@ -109,6 +109,7 @@ async def export_opportunities(
     ),
     min_score: int | None = Query(None, ge=0, le=10),
     db: AsyncSession = Depends(get_db),
+    _auth: None = Depends(require_api_key),
 ) -> StreamingResponse:
     """Exporta oportunidades a CSV para import al CRM.
 
