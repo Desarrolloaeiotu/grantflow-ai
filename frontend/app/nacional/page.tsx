@@ -23,12 +23,23 @@ export default async function NacionalPage({
   const params = await searchParams
   const section = params.section || 'radar'
 
-  // Fetch data server-side
-  const [opportunities, metrics, contacts] = await Promise.all([
-    getOportunidadesNacionales(),
-    getDashboardMetrics(),
-    getContactosNacionales(),
-  ])
+  // Fetch data server-side with error handling
+  let opportunities = []
+  let metrics = { detected: 0, reviewed: 0, in_crm: 0, cerrada: 0 }
+  let contacts = []
+
+  try {
+    const [opps, met, conts] = await Promise.all([
+      getOportunidadesNacionales(),
+      getDashboardMetrics(),
+      getContactosNacionales(),
+    ])
+    opportunities = opps
+    metrics = met
+    contacts = conts
+  } catch (error) {
+    console.error('Error fetching Nacional data:', error)
+  }
 
   const alerts = generateAlerts(opportunities)
   const alertCount = alerts.length
