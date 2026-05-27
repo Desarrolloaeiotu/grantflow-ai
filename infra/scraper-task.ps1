@@ -3,7 +3,7 @@
 
 # Variables
 $ApiUrl = "http://localhost:8000/api/v1/scrape/run?source=nacional_colombia"
-$SlackWebhook = "https://hooks.slack.com/services/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"
+$SlackWebhook = $env:SLACK_WEBHOOK_URL  # Set via environment variable
 $LogPath = "$env:TEMP\grantflow-scraper.log"
 
 # Timestamp

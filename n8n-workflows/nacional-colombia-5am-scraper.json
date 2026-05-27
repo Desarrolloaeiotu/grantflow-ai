@@ -68,7 +68,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://hooks.slack.com/services/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",
+        "url": "{{ env.SLACK_WEBHOOK_URL }}",
         "contentType": "application/json",
         "body": {
           "text": "🇨🇴 Nacional Colombia - Scraper OK",
@@ -124,7 +124,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://hooks.slack.com/services/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",
+        "url": "{{ env.SLACK_WEBHOOK_URL }}",
         "contentType": "application/json",
         "body": {
           "text": "🇨🇴 ❌ Nacional Colombia Scraper FAILED",

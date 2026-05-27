@@ -8,7 +8,7 @@ set -e
 
 # Variables
 API_URL="http://localhost:8000/api/v1/scrape/run?source=nacional_colombia"
-SLACK_WEBHOOK="https://hooks.slack.com/services/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"
+SLACK_WEBHOOK="${SLACK_WEBHOOK_URL}"  # Set via environment variable
 LOG_FILE="/var/log/grantflow/nacional-colombia-scraper.log"
 LOG_DIR=$(dirname "$LOG_FILE")
 
