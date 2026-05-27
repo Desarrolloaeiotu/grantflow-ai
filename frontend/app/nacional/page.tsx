@@ -55,7 +55,7 @@ export default async function NacionalPage({
             <AlertasSection opportunities={opportunities} />
           )}
           {section === 'radar' && (
-            <RadarSection opportunities={opportunities} metrics={metrics} />
+            <RadarSection opportunities={opportunities} />
           )}
           {section === 'pipeline' && (
             <PipelineSection opportunities={opportunities} />
