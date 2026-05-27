@@ -46,54 +46,44 @@ export default function NacionalSidebar({
   ]
 
   return (
-    <aside className="w-64 bg-gray-900 text-white p-6 h-screen overflow-y-auto">
-      <div className="mb-8">
-        <h2 className="text-xl font-bold mb-2">Nacional Colombia</h2>
-        <p className="text-xs text-gray-400">Prospección Estratégica</p>
-      </div>
-
-      <nav className="space-y-2">
+    <aside className="w-56 bg-white border-l border-gray-200 p-6 h-screen overflow-y-auto flex flex-col">
+      {/* Secciones de navegación */}
+      <nav className="space-y-1 mb-8">
         {sections.map((section) => (
           <Link
             key={section.id}
             href={`/nacional?section=${section.id}`}
-            className={`flex items-center justify-between px-4 py-3 rounded-lg transition ${
+            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition ${
               activeSection === section.id
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-300 hover:bg-gray-800'
+                ? 'bg-blue-50 text-blue-600 font-medium'
+                : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <span className="text-lg">{section.icon}</span>
-              <span className="font-medium">{section.label}</span>
-            </div>
-            {section.badge > 0 && (
-              <span className="inline-flex items-center justify-center w-6 h-6 bg-red-600 text-white text-xs font-bold rounded-full">
-                {section.badge}
-              </span>
-            )}
+            <span className="text-base">{section.icon}</span>
+            <span>{section.label}</span>
           </Link>
         ))}
       </nav>
 
-      <div className="mt-8 pt-8 border-t border-gray-700">
-        <h3 className="text-xs font-semibold text-gray-400 mb-4">RESUMEN</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-400">Detectadas:</span>
-            <span className="font-semibold">{metrics.detected}</span>
+      {/* Resumen */}
+      <div className="pt-6 border-t border-gray-200 space-y-3 text-sm">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Resumen</h3>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Detectadas</span>
+            <span className="font-semibold text-gray-900">{metrics.detected}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Revisadas:</span>
-            <span className="font-semibold">{metrics.reviewed}</span>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Revisadas</span>
+            <span className="font-semibold text-gray-900">{metrics.reviewed}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">En gestión:</span>
-            <span className="font-semibold">{metrics.in_crm}</span>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">En gestión</span>
+            <span className="font-semibold text-gray-900">{metrics.in_crm}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Cerradas:</span>
-            <span className="font-semibold">{metrics.cerrada}</span>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Cerradas</span>
+            <span className="font-semibold text-gray-900">{metrics.cerrada}</span>
           </div>
         </div>
       </div>

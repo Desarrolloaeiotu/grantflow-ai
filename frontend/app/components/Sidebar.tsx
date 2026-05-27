@@ -3,16 +3,32 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 
-const NAV_ITEMS = [
-  { label: 'Oportunidades', href: '/',          icon: '◈', count: null },
-  { label: 'Alertas',        href: '/alertas',   icon: '!', count: null },
-  { label: 'Radar',          href: '/radar',     icon: '◎', count: null },
-  { label: 'Pipeline',       href: '/pipeline',  icon: '▱', count: null },
-  { label: 'Contactos',      href: '/contacts',  icon: '·', count: null },
-]
-
-const NAV_NATIONAL = [
-  { label: 'Nacional Colombia', href: '/nacional', icon: '◆', count: '4' },
+const NAV_STRUCTURE = [
+  {
+    id: 'oportunidades',
+    label: 'Oportunidades',
+    href: '/',
+    icon: '◈',
+    subsections: [
+      { label: 'Alertas', href: '/?section=alertas', icon: '!' },
+      { label: 'Radar', href: '/?section=radar', icon: '◎' },
+      { label: 'Pipeline', href: '/?section=pipeline', icon: '▱' },
+      { label: 'Contactos', href: '/?section=contacts', icon: '·' },
+    ],
+  },
+  {
+    id: 'nacional',
+    label: 'Nacional Colombia',
+    href: '/nacional',
+    icon: '◆',
+    count: '4',
+    subsections: [
+      { label: 'Alertas', href: '/nacional?section=alertas', icon: '!' },
+      { label: 'Radar', href: '/nacional?section=radar', icon: '◎' },
+      { label: 'Pipeline', href: '/nacional?section=pipeline', icon: '▱' },
+      { label: 'Contactos', href: '/nacional?section=contactos', icon: '·' },
+    ],
+  },
 ]
 
 export default function Sidebar() {
@@ -27,36 +43,38 @@ export default function Sidebar() {
 
       <nav className="nav">
         <div className="nav-section">Principal</div>
-        {NAV_ITEMS.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`nav-item ${pathname === item.href ? 'active' : ''}`}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            {item.label}
-            {item.count !== null && (
-              <span className="nav-count">{item.count}</span>
-            )}
-          </Link>
-        ))}
+        {NAV_STRUCTURE.map((section) => (
+          <div key={section.id}>
+            <Link
+              href={section.href}
+              className={`nav-item ${pathname === section.href || pathname.startsWith(section.href + '?') ? 'active' : ''}`}
+            >
+              <span className="nav-icon">{section.icon}</span>
+              {section.label}
+              {section.count && (
+                <span className="nav-count">{section.count}</span>
+              )}
+            </Link>
 
-        <div className="nav-section" style={{ marginTop: 8 }}>Mercado Local</div>
-        {NAV_NATIONAL.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`nav-item ${pathname === item.href ? 'active' : ''}`}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            {item.label}
-            {item.count && <span className="nav-count">{item.count}</span>}
-          </Link>
+            {/* Subsecciones indentadas */}
+            <div className="nav-subsections">
+              {section.subsections.map((sub) => (
+                <Link
+                  key={sub.href}
+                  href={sub.href}
+                  className="nav-subitem"
+                >
+                  <span className="nav-icon" style={{ fontSize: 12 }}>{sub.icon}</span>
+                  <span style={{ fontSize: 13 }}>{sub.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
         ))}
 
         <div className="nav-section" style={{ marginTop: 8 }}>Sistema</div>
         <Link
-          href="/pipeline"
+          href="/"
           className="nav-item"
           style={{ opacity: 0.6, fontSize: 12 }}
         >

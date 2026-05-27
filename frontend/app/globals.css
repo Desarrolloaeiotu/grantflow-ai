@@ -120,6 +120,34 @@ a { text-decoration: none; }
 }
 .nav-item.active .nav-count { background: var(--go-bg); color: var(--go); }
 
+/* Subsecciones de navegación */
+.nav-subsections {
+  display: flex;
+  flex-direction: column;
+  padding-left: 26px;
+  gap: 1px;
+}
+.nav-subitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--r);
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.nav-subitem:hover { background: var(--bg3); color: var(--text); }
+.nav-subitem.active {
+  background: var(--go-bg);
+  color: var(--go);
+  border-color: var(--go-bdr);
+  font-weight: 500;
+}
+
 .sidebar-footer {
   padding: 14px 20px;
   border-top: 1px solid var(--border);

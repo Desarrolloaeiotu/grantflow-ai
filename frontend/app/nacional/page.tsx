@@ -47,9 +47,6 @@ export default async function NacionalPage({
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <NacionalSidebar metrics={metrics} alertCount={alertCount} />
-
       {/* Main content */}
       <main className="flex-1 overflow-y-auto">
         {/* Top bar with scraper button */}
@@ -77,6 +74,9 @@ export default async function NacionalPage({
           )}
         </Suspense>
       </main>
+
+      {/* Sidebar derecha */}
+      <NacionalSidebar metrics={metrics} alertCount={alertCount} />
     </div>
   )
 }
