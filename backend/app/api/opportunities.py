@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import require_api_key
+from app.models.funder import Funder
 from app.models.opportunity import Opportunity
 from app.schemas.opportunity import OpportunityList, OpportunityRead, OpportunityUpdate
 
@@ -347,7 +348,7 @@ async def enrich_opportunity_contacts(
         # Try searching by organization name
         org_name = opp.source_name
         if opp.funder_id:
-            funder = await db.get(Opportunity.__funder__)
+            funder = await db.get(Funder, opp.funder_id)
             if funder:
                 org_name = funder.name
 

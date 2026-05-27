@@ -136,5 +136,6 @@ class DevelopmentAidScraper(BaseScraper):
             org_website="https://www.developmentaid.org",
             sectors=["aggregator"],
             capital_type="grant",
+            market_window="funding_global",
             raw_content=json.dumps(raw, default=str)[:10_000],
         )

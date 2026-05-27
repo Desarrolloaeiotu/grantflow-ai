@@ -17,7 +17,6 @@ export default async function OpportunitiesPage({
   const params = await searchParams
   const section = params.section || 'radar'
 
-  // Fetch data server-side with error handling
   let metrics: any = null
   let list: any = null
 
@@ -30,11 +29,11 @@ export default async function OpportunitiesPage({
     console.error('Error fetching Opportunities data:', error)
   }
 
+  const opportunities = list?.items || []
+
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto">
-        {/* Top bar with scraper button */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Oportunidades Global</h1>
           <RunScraperButton
@@ -43,24 +42,22 @@ export default async function OpportunitiesPage({
           />
         </div>
 
-        {/* Section content */}
         <Suspense fallback={<div className="p-6">Cargando...</div>}>
           {section === 'alertas' && (
-            <AlertasSection />
+            <AlertasSection opportunities={opportunities} />
           )}
           {section === 'radar' && (
             <RadarSection initialList={list} />
           )}
           {section === 'pipeline' && (
-            <PipelineSection />
+            <PipelineSection opportunities={opportunities} />
           )}
           {section === 'contactos' && (
-            <ContactosSection />
+            <ContactosSection opportunities={opportunities} />
           )}
         </Suspense>
       </main>
 
-      {/* Sidebar derecha */}
       <OpportunitiesSidebar metrics={metrics} />
     </div>
   )

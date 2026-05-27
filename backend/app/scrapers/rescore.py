@@ -145,13 +145,14 @@ async def _process_batch(
     return succeeded, failed, quota_exceeded
 
 
-async def main(rescore_all: bool, limit: int | None) -> None:
+async def rescore_batch(rescore_all: bool = False, limit: int | None = None) -> dict[str, int]:
+    """Ejecuta rescoring y devuelve stats. Llamable como función desde endpoints."""
     engine = ScoringEngine()
     if engine._provider == "none":
         logger.error(
             "No LLM provider configured. Set GOOGLE_API_KEY or ANTHROPIC_API_KEY in .env"
         )
-        return
+        return {"total": 0, "succeeded": 0, "failed": 0}
 
     delay = GEMINI_DELAY_SEC if engine._provider == "gemini" else ANTHROPIC_DELAY_SEC
     logger.info("Rescoring start", provider=engine._provider, delay=delay)
@@ -190,6 +191,12 @@ async def main(rescore_all: bool, limit: int | None) -> None:
         total=total,
         aborted=aborted,
     )
+
+    return {"total": total, "succeeded": total_ok, "failed": total_failed}
+
+
+async def main(rescore_all: bool, limit: int | None) -> None:
+    await rescore_batch(rescore_all, limit)
 
 
 if __name__ == "__main__":

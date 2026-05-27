@@ -89,11 +89,24 @@
       "Bash(curl -s http://localhost:8000/api/v1/opportunities?window=funding_colombia -H 'X-API-Key: test-api-key-123456')",
       "Bash(curl -s http://localhost:8000/api/v1/dashboard/metrics?region=colombia -H 'X-API-Key: test-api-key-123456')",
       "Bash(curl -s http://localhost:8000/api/v1/contacts?region=colombia -H 'X-API-Key: test-api-key-123456')",
-      "Bash(python3)"
+      "Bash(python3)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(python -m pytest tests/test_scrapers.py -v)",
+      "Bash(pip install *)",
+      "Bash(where python *)",
+      "Bash(pip list *)",
+      "Bash(findstr pytest *)",
+      "Bash(where pytest *)",
+      "Bash(C:\\\\Users\\\\Luis Mendez\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\Scripts\\\\pytest.exe tests/test_scrapers.py -v)",
+      "PowerShell(& \"C:\\\\Users\\\\Luis Mendez\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe\" -m pip install pytest-asyncio beautifulsoup4 lxml structlog httpx --quiet 2>&1)",
+      "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\Luis Mendez\\\\OneDrive - Fundación Carulla - Aeiotu\\\\Escritorio\\\\Grantflow app\\\\frontend\\\\.next\" -ErrorAction SilentlyContinue)",
+      "Bash(Write-Host \"Cache .next eliminado\")",
+      "Bash(npx tsc *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Luis Mendez\\OneDrive - Fundaci�n Carulla - Aeiotu\\Escritorio\\Grantflow app\\frontend\\app\\nacional",
-      "\\tmp"
+      "\\tmp",
+      "C:\\Users\\Luis Mendez\\OneDrive - Fundaci�n Carulla - Aeiotu\\Escritorio\\Grantflow app\\frontend"
     ]
   },
   "enabledPlugins": {

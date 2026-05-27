@@ -164,6 +164,7 @@ class BidScraper(BaseScraper):
             eligible_countries=["LATAM"],
             sectors=["bid"],
             capital_type="grant",
+            market_window="funding_global",
             raw_content=json.dumps(raw, default=str)[:10_000],
         )
 

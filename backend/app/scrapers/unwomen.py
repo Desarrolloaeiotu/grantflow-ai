@@ -149,6 +149,7 @@ class UnWomenScraper(BaseScraper):
             eligible_countries=["GLOBAL"],
             sectors=["gender", "un_women"],
             capital_type="grant",
+            market_window="funding_global",
             raw_content=json.dumps(raw, default=str)[:10_000],
         )
 

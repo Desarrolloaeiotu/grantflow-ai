@@ -392,6 +392,7 @@ class RssFeedsScraper(BaseScraper):
             source_name=f"rss:{feed.name}",
             org_website=feed.org_website,
             capital_type=feed.capital_type,
+            market_window="funding_global",
             sectors=_extract_categories(entry),
             raw_content=json.dumps({"feed": feed.name, "entry": entry}, default=str)[:10_000],
         )

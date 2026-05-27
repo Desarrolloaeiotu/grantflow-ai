@@ -228,7 +228,7 @@ class ScoringEngine:
         """Despacho a Anthropic o Gemini según el provider activo."""
         if self._provider == "anthropic" and self._anthropic:
             response = await self._anthropic.messages.create(
-                model="claude-sonnet-4-6",
+                model="claude-sonnet-4-5",
                 max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )

@@ -164,6 +164,7 @@ class GrantsGovScraper(BaseScraper):
             eligible_countries=["USA"],
             sectors=_extract_sectors(raw),
             capital_type="grant",
+            market_window="funding_global",
             raw_content=json.dumps(raw, default=str),
         )
 
