@@ -3,6 +3,16 @@
 import { Opportunity, Contact, Alert, DashboardMetrics } from '../types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || ''
+
+// Helper function to create fetch headers with API key
+function getFetchHeaders() {
+  const headers: HeadersInit = {}
+  if (API_KEY) {
+    headers['X-API-Key'] = API_KEY
+  }
+  return headers
+}
 
 // Fetch all national opportunities (filtered by market_window=funding_colombia)
 export async function getOportunidadesNacionales(
@@ -22,6 +32,7 @@ export async function getOportunidadesNacionales(
 
   const res = await fetch(`${API_URL}/api/v1/opportunities?${params.toString()}`, {
     cache: 'no-store', // Always fresh data for Server Components
+    headers: getFetchHeaders(),
   })
 
   if (!res.ok) throw new Error('Failed to fetch opportunities')
@@ -33,6 +44,7 @@ export async function getOportunidadesNacionales(
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   const res = await fetch(`${API_URL}/api/v1/dashboard/metrics?region=colombia`, {
     cache: 'no-store',
+    headers: getFetchHeaders(),
   })
 
   if (!res.ok) throw new Error('Failed to fetch metrics')
@@ -43,6 +55,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 export async function getContactosNacionales(): Promise<Contact[]> {
   const res = await fetch(`${API_URL}/api/v1/contacts?region=colombia`, {
     cache: 'no-store',
+    headers: getFetchHeaders(),
   })
 
   if (!res.ok) throw new Error('Failed to fetch contacts')
@@ -54,6 +67,7 @@ export async function getContactosNacionales(): Promise<Contact[]> {
 export async function getOportunidad(id: string): Promise<Opportunity> {
   const res = await fetch(`${API_URL}/api/v1/opportunities/${id}`, {
     cache: 'no-store',
+    headers: getFetchHeaders(),
   })
 
   if (!res.ok) throw new Error(`Failed to fetch opportunity ${id}`)

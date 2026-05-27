@@ -191,26 +191,61 @@ RSS_FEEDS: tuple[FeedSource, ...] = (
 
 # Keywords HIGH SPECIFICITY
 CORE_KEYWORDS = (
-    # Primera infancia / ECD
-    "early childhood", "ecd", "early childhood development",
-    "preschool", "preescolar", "educación inicial", "primera infancia",
-    "desarrollo infantil temprano", "cero a siempre",
-    # Economía del cuidado
-    "care economy", "economía del cuidado", "trabajo de cuidado",
-    # Empoderamiento femenino
-    "women empowerment", "empoderamiento femenino", "gender equality",
-    "women leadership", "igualdad de género",
-    # Formación de líderes educativos
-    "teacher training", "formación docente", "acompañamiento pedagógico",
-    "educational leadership", "líderes educativos",
-    # MEAL / Gestión del conocimiento
-    "monitoring evaluation", "monitoreo y evaluación",
-    "knowledge management", "sistematización",
-    # Trayectorias educativas
-    "educational trajectories", "continuidad educativa", "transición escolar",
-    # Transformación sistémica
-    "systemic change", "modelo escalable", "transferencia de modelo",
-    "incidencia política", "policy advocacy",
+    # 1. Early childhood development, education, school readiness
+    "early childhood development", "early childhood education", "educación inicial", "primera infancia", "school readiness",
+    "desarrollo infantil temprano", "educación preescolar", "preparación escolar", "listo para la escuela", "preescolar",
+    "desarrollo infantil", "desarrollo temprano", "cero a siempre", "early childhood", "ecd", "preschool",
+    "cdi", "centro de desarrollo infantil", "centros infantiles", "jardines", "jardín", "jardines infantiles",
+    "modalidad institucional", "modalidad familiar", "cuidado infantil", "cuidadores",
+
+    # 2. Learning through play, foundational learning, early literacy/numeracy
+    "learning through play", "foundational learning", "lectura temprana", "escritura temprana", "matemáticas tempranas",
+    "lectoescritura", "early literacy", "early numeracy", "early math", "aprendizaje a través del juego", "juego para aprender",
+    "aprendizaje fundamental", "lectura", "escritura",
+
+    # 3. Teacher training, educator professional development, caregiver training
+    "teacher training", "educator professional development", "caregiver training", "comunidades de práctica",
+    "formación docente", "formación de maestros", "capacitación docente", "desarrollo profesional docente",
+    "capacitación de cuidadores", "formación de cuidadores", "asesoría pedagógica", "acompañamiento pedagógico",
+    "fortalecimiento de capacidades", "líderes educativos", "maestros", "maestras", "educadores", "communities of practice",
+
+    # 4. Care economy, childcare systems, home-based childcare, women caregivers & empowerment
+    "care economy", "childcare systems", "home-based childcare", "women caregivers", "women economic empowerment",
+    "economía del cuidado", "sistemas de cuidado infantil", "cuidado en el hogar", "cuidadoras", "mujeres cuidadoras",
+    "empoderamiento económico de las mujeres", "empoderamiento femenino", "women empowerment", "trabajo de cuidado",
+
+    # 5. Migrant children, refugee children, host communities, population on the move, social inclusion
+    "migrant children", "refugee children", "host communities", "población en movimiento", "inclusión social",
+    "niños migrantes", "niñas migrantes", "niñez migrante", "niños refugiados", "niñez refugiada", "comunidades de acogida",
+    "población migrante", "población móvil", "social inclusion", "desplazamiento",
+
+    # 6. EdTech, digital public goods, open educational resources, learning platforms, AI for education
+    "edtech", "digital public goods", "open educational resources", "learning platforms", "ai for education",
+    "tecnología educativa", "bienes públicos digitales", "recursos educativos abiertos", "plataformas de aprendizaje",
+    "ia en educación", "inteligencia artificial en educación",
+
+    # 7. Data for education, MEL, child development assessment, impact measurement, evidence-based policy
+    "data for education", "mel", "child development assessment", "impact measurement", "evidence-based policy",
+    "datos para la educación", "monitoreo, evaluación y aprendizaje", "evaluación del desarrollo infantil",
+    "medición de impacto", "políticas basadas en evidencia", "monitoreo y evaluación", "sistematización",
+    "medición", "indicadores",
+
+    # 8. Learning environments, child-friendly spaces, ludotecas, bibliotecas, salas de lactancia & family-friendly workplaces
+    "learning environments", "child-friendly spaces", "family-friendly workplaces", "ambientes de aprendizaje",
+    "entornos de aprendizaje", "espacios amigables para niños", "espacios seguros para niños", "ludotecas",
+    "bibliotecas", "salas de lactancia", "lugares de trabajo amigables con las familias", "entornos familiares laborales",
+    "empresas familiarmente responsables",
+
+    # 9. Climate education, nature-based solutions, green learning spaces, sustainability
+    "climate education", "nature-based solutions", "green learning spaces", "sostenibilidad en primera infancia",
+    "educación climática", "soluciones basadas en la naturaleza", "espacios verdes de aprendizaje", "aulas verdes",
+    "sostenibilidad infantil", "sustainability in early childhood",
+
+    # Otras palabras clave institucionales y sectoriales de aeioTU
+    "estándares icbf", "icbf", "lineamientos", "orientaciones", "incidencia política", "transformación sistémica",
+    "modelo escalable", "transferencia de modelo", "replicación", "escalable", "transferencia", "cafam",
+    "caja de compensación", "cajas de compensación", "afiliados", "beneficiarios", "compensación", "género",
+    "gender", "mujeres", "equity", "sostenibilidad financiera", "trayectorias educativas", "continuidad educativa",
 )
 
 GEO_KEYWORDS = (

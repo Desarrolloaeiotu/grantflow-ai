@@ -29,7 +29,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", settings.NEXT_PUBLIC_API_URL],
+    allow_origins=["http://localhost:3000", "http://localhost:3001", settings.NEXT_PUBLIC_API_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

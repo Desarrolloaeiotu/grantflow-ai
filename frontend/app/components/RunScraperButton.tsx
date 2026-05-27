@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface RunScraperButtonProps {
   source?: string
@@ -13,6 +14,7 @@ export default function RunScraperButton({
   label = '▶ Ejecutar Scraper',
   showStatus = true
 }: RunScraperButtonProps) {
+  const router = useRouter()
   const [isRunning, setIsRunning] = useState(false)
   const [status, setStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
@@ -23,24 +25,37 @@ export default function RunScraperButton({
     setMessage('Ejecutando scraper...')
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const res = await fetch(`${apiUrl}/api/v1/scrape/run?source=${source}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
+      const apiUrl: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const apiKey: string = process.env.NEXT_PUBLIC_API_KEY || ''
 
-      if (!res.ok) {
-        throw new Error(`Error ${res.status}: ${res.statusText}`)
+      // Paso 1: Ejecutar scraper con scoring automático
+      const sourceParam = source || 'nacional_colombia'
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (apiKey) {
+        headers['X-API-Key'] = apiKey
       }
 
-      const data = await res.json()
-      setStatus('success')
-      setMessage(`✓ ${data.count || 0} oportunidades detectadas`)
+      const scrapeRes = await fetch(`${apiUrl}/api/v1/scrape/run?source=${sourceParam}&score=true`, {
+        method: 'POST',
+        headers,
+      })
 
-      // Recargar la página después de 2 segundos
+      if (!scrapeRes.ok) {
+        throw new Error(`Error ${scrapeRes.status}: ${scrapeRes.statusText}`)
+      }
+
+      const scrapeData = await scrapeRes.json()
+      const newCount = scrapeData.total_persisted || 0
+
+      setStatus('success')
+      setMessage(`✓ Completado: ${newCount} nuevas oportunidades`)
+
+      // Recargar página sin filtros después de 1.5 segundos
       setTimeout(() => {
-        window.location.reload()
-      }, 2000)
+        window.location.href = '/'
+      }, 1500)
     } catch (err) {
       setStatus('error')
       setMessage(`✗ Error: ${err instanceof Error ? err.message : 'Unknown error'}`)

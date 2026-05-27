@@ -96,6 +96,11 @@ const URGENCY_FILTERS = [
   { key: 'medium', label: 'Media' },
 ]
 
+const CAPITAL_TYPE_FILTERS = [
+  { key: 'grant',      label: 'Grants' },
+  { key: 'other',      label: 'Oportunidades' },
+]
+
 const WINDOW_LABEL: Record<string, string> = {
   funding_colombia: 'Funding Colombia',
   funding_global: 'Funding Global',
@@ -165,12 +170,13 @@ function buildFilterUrl(current: Record<string, string>, key: string, value: str
 export default async function OpportunitiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ decision?: string; window?: string; urgency?: string; score_min?: string; q?: string; page?: string }>
+  searchParams: Promise<{ decision?: string; window?: string; urgency?: string; capital_type?: string; score_min?: string; q?: string; page?: string }>
 }) {
   const params = await searchParams
   const decision = params.decision ?? 'all'
   const windowFilter = params.window ?? ''
   const urgencyFilter = params.urgency ?? ''
+  const capitalType = params.capital_type ?? ''
   const scoreMin = params.score_min ?? ''
   const searchQuery = params.q ?? ''
   const page = Number(params.page ?? 1)
@@ -179,6 +185,7 @@ export default async function OpportunitiesPage({
   if (decision !== 'all') activeFilters.decision = decision
   if (windowFilter) activeFilters.window = windowFilter
   if (urgencyFilter) activeFilters.urgency = urgencyFilter
+  if (capitalType) activeFilters.capital_type = capitalType
   if (scoreMin) activeFilters.score_min = scoreMin
   if (searchQuery) activeFilters.q = searchQuery
 
@@ -194,7 +201,7 @@ export default async function OpportunitiesPage({
       {/* Topbar */}
       <div className="topbar" style={{ margin: '-20px -24px 0', width: 'calc(100% + 48px)' }}>
         <div className="topbar-title" style={{ flex: 0 }}>
-          Oportunidades <span>— pipeline activo</span>
+          Global <span>— pipeline activo</span>
         </div>
         <SearchBar />
         <div style={{ flex: 1 }}></div>
@@ -221,8 +228,24 @@ export default async function OpportunitiesPage({
         <ScraperControls source="grantsgov" title="Ejecutar Scraper Global" />
       </div>
 
-      {/* Filtros — decisión */}
+      {/* Filtros — tipo de capital */}
       <div className="filters" style={{ marginTop: 20 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: 'var(--muted)', alignSelf: 'center', marginRight: 4 }}>
+          Tipo:
+        </span>
+        {CAPITAL_TYPE_FILTERS.map((f) => (
+          <Link
+            key={f.key}
+            href={buildFilterUrl(activeFilters, 'capital_type', f.key)}
+            className={`filter-btn ${capitalType === f.key ? 'on' : ''}`}
+          >
+            {f.label}
+          </Link>
+        ))}
+      </div>
+
+      {/* Filtros — decisión */}
+      <div className="filters">
         <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: 'var(--muted)', alignSelf: 'center', marginRight: 4 }}>
           Decisión:
         </span>

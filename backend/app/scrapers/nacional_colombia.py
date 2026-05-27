@@ -38,49 +38,61 @@ logger = structlog.get_logger()
 # Palabras clave CORE para Nacional Colombia
 # Dividida en CORE (muy relevante) y SECONDARY (moderadamente relevante)
 NACIONAL_KEYWORDS_CORE = (
-    # Primera infancia / ECD
-    "primera infancia", "educación inicial", "educación preescolar",
-    "desarrollo infantil", "desarrollo temprano", "cero a siempre",
-    "early childhood", "ecd", "preschool", "preescolar",
+    # 1. Early childhood development, education, school readiness
+    "early childhood development", "early childhood education", "educación inicial", "primera infancia", "school readiness",
+    "desarrollo infantil temprano", "educación preescolar", "preparación escolar", "listo para la escuela", "preescolar",
+    "desarrollo infantil", "desarrollo temprano", "cero a siempre", "early childhood", "ecd", "preschool",
+    "cdi", "centro de desarrollo infantil", "centros infantiles", "jardines", "jardín", "jardines infantiles",
+    "modalidad institucional", "modalidad familiar", "cuidado infantil", "cuidadores",
 
-    # CDI y operación
-    "cdi", "centro de desarrollo infantil", "centros infantiles",
-    "jardines", "jardín", "jardines infantiles",
-    "modalidad institucional", "modalidad familiar",
-    "cuidado infantil", "cuidadores",
+    # 2. Learning through play, foundational learning, early literacy/numeracy
+    "learning through play", "foundational learning", "lectura temprana", "escritura temprana", "matemáticas tempranas",
+    "lectoescritura", "early literacy", "early numeracy", "early math", "aprendizaje a través del juego", "juego para aprender",
+    "aprendizaje fundamental", "lectura", "escritura",
 
-    # Docentes y formación de líderes
-    "formación docente", "capacitación docentes", "docentes",
-    "acompañamiento pedagógico", "asesoría pedagógica",
-    "fortalecimiento de capacidades", "líderes educativos",
-    "maestros", "maestras", "educadores",
+    # 3. Teacher training, educator professional development, caregiver training
+    "teacher training", "educator professional development", "caregiver training", "comunidades de práctica",
+    "formación docente", "formación de maestros", "capacitación docente", "desarrollo profesional docente",
+    "capacitación de cuidadores", "formación de cuidadores", "asesoría pedagógica", "acompañamiento pedagógico",
+    "fortalecimiento de capacidades", "líderes educativos", "maestros", "maestras", "educadores", "communities of practice",
 
-    # Política pública y transformación sistémica
-    "cero a siempre", "política pública", "política educativa",
-    "estándares icbf", "icbf", "lineamientos", "orientaciones",
-    "incidencia política", "transformación sistémica",
-    "modelo", "programa", "proyecto educativo",
+    # 4. Care economy, childcare systems, home-based childcare, women caregivers & empowerment
+    "care economy", "childcare systems", "home-based childcare", "women caregivers", "women economic empowerment",
+    "economía del cuidado", "sistemas de cuidado infantil", "cuidado en el hogar", "cuidadoras", "mujeres cuidadoras",
+    "empoderamiento económico de las mujeres", "empoderamiento femenino", "women empowerment", "trabajo de cuidado",
 
-    # Cajas de compensación (aliados clave)
-    "cafam", "caja de compensación", "cajas de compensación",
-    "afiliados", "beneficiarios", "compensación",
+    # 5. Migrant children, refugee children, host communities, population on the move, social inclusion
+    "migrant children", "refugee children", "host communities", "población en movimiento", "inclusión social",
+    "niños migrantes", "niñas migrantes", "niñez migrante", "niños refugiados", "niñez refugiada", "comunidades de acogida",
+    "población migrante", "población móvil", "social inclusion", "desplazamiento",
 
-    # Economía del cuidado
-    "economía del cuidado", "sostenibilidad financiera",
-    "trabajo de cuidado", "cuidadoras",
+    # 6. EdTech, digital public goods, open educational resources, learning platforms, AI for education
+    "edtech", "digital public goods", "open educational resources", "learning platforms", "ai for education",
+    "tecnología educativa", "bienes públicos digitales", "recursos educativos abiertos", "plataformas de aprendizaje",
+    "ia en educación", "inteligencia artificial en educación",
 
-    # Empoderamiento femenino
-    "empoderamiento femenino", "women empowerment",
-    "género", "gender", "mujeres", "equity",
+    # 7. Data for education, MEL, child development assessment, impact measurement, evidence-based policy
+    "data for education", "mel", "child development assessment", "impact measurement", "evidence-based policy",
+    "datos para la educación", "monitoreo, evaluación y aprendizaje", "evaluación del desarrollo infantil",
+    "medición de impacto", "políticas basadas en evidencia", "monitoreo y evaluación", "sistematización",
+    "medición", "indicadores",
 
-    # MEAL y trayectorias
-    "monitoreo y evaluación", "sistematización",
-    "trayectorias educativas", "continuidad educativa",
-    "evaluación", "medición", "indicadores",
+    # 8. Learning environments, child-friendly spaces, ludotecas, bibliotecas, salas de lactancia & family-friendly workplaces
+    "learning environments", "child-friendly spaces", "family-friendly workplaces", "ambientes de aprendizaje",
+    "entornos de aprendizaje", "espacios amigables para niños", "espacios seguros para niños", "ludotecas",
+    "bibliotecas", "salas de lactancia", "lugares de trabajo amigables con las familias", "entornos familiares laborales",
+    "empresas familiarmente responsables",
 
-    # Modelo y transferencia
-    "modelo escalable", "transferencia de modelo", "replicación",
-    "escalable", "transferencia", "replicación",
+    # 9. Climate education, nature-based solutions, green learning spaces, sustainability
+    "climate education", "nature-based solutions", "green learning spaces", "sostenibilidad en primera infancia",
+    "educación climática", "soluciones basadas en la naturaleza", "espacios verdes de aprendizaje", "aulas verdes",
+    "sostenibilidad infantil", "sustainability in early childhood",
+
+    # Otras palabras clave institucionales y sectoriales de aeioTU
+    "estándares icbf", "icbf", "lineamientos", "orientaciones", "incidencia política", "transformación sistémica",
+    "modelo escalable", "transferencia de modelo", "replicación", "escalable", "transferencia", "cafam",
+    "caja de compensación", "cajas de compensación", "afiliados", "beneficiarios", "compensación", "género",
+    "gender", "mujeres", "equity", "sostenibilidad financiera", "trayectorias educativas", "continuidad educativa",
 )
 
 NACIONAL_KEYWORDS_SECONDARY = (
@@ -90,17 +102,19 @@ NACIONAL_KEYWORDS_SECONDARY = (
 
     # Infancia y vulnerabilidad
     "infancia", "niños", "niñas", "menores", "infantes",
-    "vulnerabilidad", "riesgo", "desplazamiento",
-    "pobreza", "pobreza extrema",
+    "vulnerabilidad", "riesgo", "pobreza", "pobreza extrema",
 
     # Salud y bienestar
     "salud", "nutrición", "bienestar", "cuidado",
     "desarrollo", "psicosocial",
 
-    # Financiamiento y operación
+    # Tipos de convocatorias y oportunidades solicitadas
     "convocatoria", "llamado", "oportunidad", "beca",
     "financiamiento", "recursos", "subsidio",
     "operación", "ejecución", "implementación",
+    "grants", "premios", "contratos", "retos de innovación", "licitaciones",
+    "alianzas directas", "fondos filantrópicos", "prizes", "awards", "tenders",
+    "philanthropic funds", "alianzas", "proceso de selección", "propuesta",
 )
 
 # Combinar todas las palabras clave
@@ -165,6 +179,8 @@ class NacionalColombiaScraper(BaseScraper):
             twitter_items = await self._fetch_twitter_opportunities(client)
             all_items.extend(twitter_items)
 
+
+
         logger.info(
             "Nacional Colombia fetch complete",
             total=len(all_items),
@@ -178,6 +194,7 @@ class NacionalColombiaScraper(BaseScraper):
             google=len(google_items) if google_items else 0,
             linkedin=len(linkedin_items) if linkedin_items else 0,
             twitter=len(twitter_items) if twitter_items else 0,
+
         )
         return all_items
 
@@ -298,6 +315,12 @@ class NacionalColombiaScraper(BaseScraper):
             "acompañamiento pedagógico",
             "jardines infantiles",
             "centro de desarrollo infantil",
+            "ludotecas",
+            "salas de lactancia",
+            "economía del cuidado",
+            "inclusión social infantil",
+            "retos de innovación educativa",
+            "tecnología educativa"
         ]
 
         # Usar API oficial de SECOP (versión 1.0)
@@ -518,6 +541,13 @@ class NacionalColombiaScraper(BaseScraper):
             "primera infancia colombia llamado",
             "jardines infantiles colombia financiamiento",
             "formación docente colombia oportunidades",
+            "ludotecas primera infancia colombia",
+            "retos innovación educación inicial colombia",
+            "economía del cuidado primera infancia colombia",
+            "EdTech primera infancia colombia",
+            "salas lactancia empresas colombia",
+            "sostenibilidad primera infancia colombia",
+            "niños migrantes primera infancia colombia"
         ]
 
         for query in google_news_queries:
@@ -792,6 +822,10 @@ class NacionalColombiaScraper(BaseScraper):
             "cero a siempre colombia",
             "icbf convocatorias colombia",
             "mineducación educación inicial",
+            "ludotecas convocatoria",
+            "salas de lactancia licitacion",
+            "inclusión social infantil convocatoria",
+            "retos de innovación educativa"
         ]
 
         for query in search_queries:
@@ -857,6 +891,9 @@ class NacionalColombiaScraper(BaseScraper):
             "site:linkedin.com first childhood development colombia",
             "site:linkedin.com ECDinnovation colombia",
             "site:linkedin.com jardinería colombia convocatoria",
+            "site:linkedin.com economía del cuidado colombia",
+            "site:linkedin.com EdTech educación inicial colombia",
+            "site:linkedin.com ludotecas convocatoria colombia"
         ]
 
         for query in linkedin_queries:
@@ -918,6 +955,8 @@ class NacionalColombiaScraper(BaseScraper):
             'site:twitter.com OR site:x.com "primera infancia" colombia oportunidad',
             'site:twitter.com OR site:x.com icbf convocatoria',
             'site:twitter.com OR site:x.com "cero a siempre" convocatoria',
+            'site:twitter.com OR site:x.com "ludotecas" convocatoria',
+            'site:twitter.com OR site:x.com "economía del cuidado" colombia'
         ]
 
         for query in twitter_queries:
@@ -1077,3 +1116,71 @@ class NacionalColombiaScraper(BaseScraper):
                     pass
 
         return None
+
+
+    async def _fetch_general_web_search(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
+        """Realiza una búsqueda general en la web para detectar convocatorias en todo el internet."""
+        import random
+        items = []
+        queries = [
+            'convocatoria "educación inicial" colombia 2026',
+            'licitacion "primera infancia" colombia',
+            'grant OR "fondos filantrópicos" "primera infancia" colombia',
+            'retos de innovación "educación inicial" OR "primera infancia" colombia',
+            'convocatoria "ludotecas" OR "salas de lactancia" colombia',
+            'concurso OR premio "primera infancia" colombia',
+            '"economía del cuidado" convocatoria colombia',
+            'EdTech "educación inicial" convocatoria colombia',
+            'sostenibilidad "primera infancia" convocatoria colombia'
+        ]
+
+        # Seleccionar 3 consultas al azar para evitar rate limit de Google
+        selected_queries = random.sample(queries, min(len(queries), 3))
+
+        for query in selected_queries:
+            try:
+                search_url = "https://www.google.com/search"
+                params = {"q": query}
+                resp = await client.get(search_url, params=params, timeout=15)
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.text, "lxml")
+                
+                search_results = _extract_google_search_links(soup)
+                
+                for title, href in search_results[:10]:
+                    items.append({
+                        "title": title[:200],
+                        "url": href,
+                        "source": "general_web",
+                        "funder": "Búsqueda Web General",
+                        "search_query": query
+                    })
+                    
+            except httpx.HTTPError as exc:
+                logger.debug("General web search query failed", query=query, error=str(exc)[:100])
+                continue
+                
+        if items:
+            logger.info("General web opportunities scraped", results=len(items))
+        return items
+
+
+def _extract_google_search_links(soup: BeautifulSoup) -> list[tuple[str, str]]:
+    """Extrae enlaces y títulos de una página de resultados de Google Search."""
+    import urllib.parse
+    results = []
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        title = a.get_text(strip=True)
+        
+        if any(x in href for x in ["google.com", "webcache.googleusercontent.com", "search?", "/settings/"]):
+            continue
+            
+        if href.startswith("/url?q="):
+            href = href.split("/url?q=")[1].split("&")[0]
+            href = urllib.parse.unquote(href)
+            
+        if href.startswith("http") and title and len(title) > 10:
+            results.append((title, href))
+            
+    return results
