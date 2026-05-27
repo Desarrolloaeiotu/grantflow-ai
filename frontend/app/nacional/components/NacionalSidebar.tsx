@@ -46,44 +46,44 @@ export default function NacionalSidebar({
   ]
 
   return (
-    <aside className="w-56 bg-white border-l border-gray-200 p-6 h-screen overflow-y-auto flex flex-col">
+    <aside style={{ width: 220, borderLeft: '1px solid var(--border)', background: 'var(--bg2)', padding: '14px 10px', height: '100vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
       {/* Secciones de navegación */}
-      <nav className="space-y-1 mb-8">
+      <nav className="nav" style={{ marginBottom: 16 }}>
         {sections.map((section) => (
           <Link
             key={section.id}
             href={`/nacional?section=${section.id}`}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition ${
-              activeSection === section.id
-                ? 'bg-blue-50 text-blue-600 font-medium'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            className={`nav-item${activeSection === section.id ? ' active' : ''}`}
+            style={{ display: 'flex', alignItems: 'center', gap: 8 }}
           >
-            <span className="text-base">{section.icon}</span>
+            <span className="nav-icon">{section.icon}</span>
             <span>{section.label}</span>
+            {section.badge > 0 && <span className="nav-count">{section.badge}</span>}
           </Link>
         ))}
       </nav>
 
       {/* Resumen */}
-      <div className="pt-6 border-t border-gray-200 space-y-3 text-sm">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Resumen</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Detectadas</span>
-            <span className="font-semibold text-gray-900">{metrics.detected}</span>
+      <div className="nav-section" style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+          Resumen
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'var(--muted)' }}>Detectadas</span>
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{metrics.detected}</span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Revisadas</span>
-            <span className="font-semibold text-gray-900">{metrics.reviewed}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'var(--muted)' }}>Revisadas</span>
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{metrics.reviewed}</span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">En gestión</span>
-            <span className="font-semibold text-gray-900">{metrics.in_crm}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'var(--muted)' }}>En gestión</span>
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{metrics.in_crm}</span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">Cerradas</span>
-            <span className="font-semibold text-gray-900">{metrics.cerrada}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'var(--muted)' }}>Cerradas</span>
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{metrics.cerrada}</span>
           </div>
         </div>
       </div>

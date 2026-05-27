@@ -46,12 +46,12 @@ export default async function NacionalPage({
   const alertCount = alerts.length
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)' }}>
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
+      <main style={{ flex: 1, overflowY: 'auto' }}>
         {/* Top bar with scraper button */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Nacional Colombia</h1>
+        <div style={{ position: 'sticky', top: 0, background: 'var(--bg2)', borderBottom: '1px solid var(--border)', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text)' }}>Nacional Colombia</h1>
           <RunScraperButton
             source="nacional_colombia"
             label="▶ Ejecutar Scraper Nacional"

@@ -86,53 +86,48 @@ export default function PipelineSection({ opportunities }: PipelineSectionProps)
   const maxCount = Math.max(...distributionByFunder.map((d) => d.count), 1)
 
   return (
-    <div className="p-6 space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">Pipeline en Gestión</h1>
+    <div className="page">
+      <div className="section-hd">
+        <h2>Pipeline en Gestión</h2>
+      </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <p className="text-gray-600 text-sm font-medium mb-2">En gestión (CRM)</p>
-          <p className="text-3xl font-bold text-green-600">{metrics.enGestion}</p>
-          <p className="text-xs text-gray-500 mt-1">
-            {((metrics.enGestion / Math.max(metrics.total, 1)) * 100).toFixed(0)}% del pipeline
-          </p>
+      <div className="kpi-row">
+        <div className="kpi go">
+          <div className="kpi-label">En gestión (CRM)</div>
+          <div className="kpi-val go">{metrics.enGestion}</div>
+          <div className="kpi-sub">{((metrics.enGestion / Math.max(metrics.total, 1)) * 100).toFixed(0)}% del pipeline</div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <p className="text-gray-600 text-sm font-medium mb-2">Revisadas (pendiente CRM)</p>
-          <p className="text-3xl font-bold text-blue-600">{metrics.revisadas}</p>
-          <p className="text-xs text-gray-500 mt-1">
-            {((metrics.revisadas / Math.max(metrics.total, 1)) * 100).toFixed(0)}% del pipeline
-          </p>
+        <div className="kpi warn">
+          <div className="kpi-label">Revisadas (pendiente CRM)</div>
+          <div className="kpi-val warn">{metrics.revisadas}</div>
+          <div className="kpi-sub">{((metrics.revisadas / Math.max(metrics.total, 1)) * 100).toFixed(0)}% del pipeline</div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <p className="text-gray-600 text-sm font-medium mb-2">Total en gestión</p>
-          <p className="text-3xl font-bold text-gray-900">{metrics.total}</p>
-          <p className="text-xs text-gray-500 mt-1">
-            oportunidades activas
-          </p>
+        <div className="kpi blue">
+          <div className="kpi-label">Total en gestión</div>
+          <div className="kpi-val blue">{metrics.total}</div>
+          <div className="kpi-sub">oportunidades activas</div>
         </div>
       </div>
 
       {/* Distribution by Funder - Bar Chart */}
       {distributionByFunder.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Distribución del Pipeline por Financiador
-          </h2>
-          <div className="space-y-3">
+        <div style={{ padding: '16px 20px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', marginBottom: 24 }}>
+          <div className="section-hd" style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 500 }}>Distribución del Pipeline por Financiador</h3>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {distributionByFunder.map((item) => (
-              <div key={item.name} className="flex items-center gap-4">
-                <div className="w-40 text-sm font-medium text-gray-700 truncate">
+              <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ width: 160, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.name}
                 </div>
-                <div className="flex-1 h-6 bg-gray-100 rounded overflow-hidden">
+                <div style={{ flex: 1, height: 6, background: 'var(--bg3)', borderRadius: 3, overflow: 'hidden' }}>
                   <div
-                    className="h-full bg-green-500"
-                    style={{ width: `${(item.count / maxCount) * 100}%` }}
+                    style={{ height: '100%', background: 'var(--go)', width: `${(item.count / maxCount) * 100}%` }}
                   />
                 </div>
-                <div className="w-12 text-right text-sm font-semibold text-gray-900">
+                <div style={{ width: 48, textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
                   {item.count}
                 </div>
               </div>
@@ -150,36 +145,22 @@ export default function PipelineSection({ opportunities }: PipelineSectionProps)
       />
 
       {/* Opportunities Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="data-table-wrap">
         {filteredOpps.length === 0 ? (
-          <div className="p-8 text-center text-gray-600">
+          <div className="empty-state">
             No hay oportunidades en el pipeline que coincidan con los filtros seleccionados
           </div>
         ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Título
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Financiador
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Monto COP
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Vencimiento
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Estado
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Urgencia
-                </th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">
-                  Expandir
-                </th>
+                <th>Título</th>
+                <th>Financiador</th>
+                <th>Monto COP</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+                <th>Urgencia</th>
+                <th style={{ width: 32 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -197,7 +178,7 @@ export default function PipelineSection({ opportunities }: PipelineSectionProps)
       </div>
 
       {/* Summary */}
-      <div className="text-sm text-gray-600 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <div style={{ fontSize: 12, color: 'var(--muted)', padding: '12px 16px', background: 'var(--bg3)', borderRadius: 'var(--r)', border: '1px solid var(--border)', marginTop: 24 }}>
         Mostrando <strong>{filteredOpps.length}</strong> de{' '}
         <strong>{metrics.total}</strong> oportunidades en gestión activa
       </div>

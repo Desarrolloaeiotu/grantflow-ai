@@ -15,13 +15,24 @@ export default function FilterBar({
   financiadores,
   sectores,
 }: FilterBarProps) {
+  const selectStyle = {
+    padding: '5px 8px',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--r)',
+    fontSize: 12,
+    background: 'var(--bg2)',
+    color: 'var(--text)',
+    fontFamily: 'var(--sans)',
+    cursor: 'pointer',
+  }
+
   return (
-    <div className="flex gap-4 p-4 bg-white border-b border-gray-200">
+    <div style={{ display: 'flex', gap: 12, padding: '12px 16px', background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
       {/* Estado filter */}
       <select
         value={activeFilters.estado}
         onChange={(e) => onFilterChange('estado', e.target.value)}
-        className="px-3 py-2 border border-gray-300 rounded text-sm"
+        style={selectStyle}
       >
         <option value="">Todos los estados</option>
         <option value="detected">Detectada</option>
@@ -34,7 +45,7 @@ export default function FilterBar({
       <select
         value={activeFilters.urgencia}
         onChange={(e) => onFilterChange('urgencia', e.target.value)}
-        className="px-3 py-2 border border-gray-300 rounded text-sm"
+        style={selectStyle}
       >
         <option value="">Todas las urgencias</option>
         <option value="high">7 días</option>
@@ -46,7 +57,7 @@ export default function FilterBar({
       <select
         value={activeFilters.financiador}
         onChange={(e) => onFilterChange('financiador', e.target.value)}
-        className="px-3 py-2 border border-gray-300 rounded text-sm"
+        style={selectStyle}
       >
         <option value="">Todos los financiadores</option>
         {financiadores.map((f) => (
@@ -60,7 +71,7 @@ export default function FilterBar({
       <select
         value={activeFilters.sector}
         onChange={(e) => onFilterChange('sector', e.target.value)}
-        className="px-3 py-2 border border-gray-300 rounded text-sm"
+        style={selectStyle}
       >
         <option value="">Todos los sectores</option>
         {sectores.map((s) => (

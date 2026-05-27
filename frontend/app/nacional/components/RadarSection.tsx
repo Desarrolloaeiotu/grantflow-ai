@@ -81,48 +81,49 @@ export default function RadarSection({ opportunities }: RadarSectionProps) {
   const maxCount = Math.max(...distributionByFunder.map((d) => d.count), 1)
 
   return (
-    <div className="p-6 space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">Radar Nacional</h1>
+    <div className="page">
+      <div className="section-hd">
+        <h2>Radar Nacional</h2>
+      </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <p className="text-gray-600 text-sm font-medium mb-2">Detectadas</p>
-          <p className="text-3xl font-bold text-gray-900">{metrics.detectadas}</p>
+      <div className="kpi-row">
+        <div className="kpi">
+          <div className="kpi-label">Detectadas</div>
+          <div className="kpi-val">{metrics.detectadas}</div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <p className="text-gray-600 text-sm font-medium mb-2">Revisadas</p>
-          <p className="text-3xl font-bold text-gray-900">{metrics.revisadas}</p>
+        <div className="kpi">
+          <div className="kpi-label">Revisadas</div>
+          <div className="kpi-val">{metrics.revisadas}</div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <p className="text-gray-600 text-sm font-medium mb-2">En gestión</p>
-          <p className="text-3xl font-bold text-gray-900">{metrics.enGestion}</p>
+        <div className="kpi">
+          <div className="kpi-label">En gestión</div>
+          <div className="kpi-val">{metrics.enGestion}</div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <p className="text-gray-600 text-sm font-medium mb-2">Cerradas</p>
-          <p className="text-3xl font-bold text-gray-900">{metrics.cerradas}</p>
+        <div className="kpi">
+          <div className="kpi-label">Cerradas</div>
+          <div className="kpi-val">{metrics.cerradas}</div>
         </div>
       </div>
 
       {/* Distribution by Funder Bar Chart */}
       {distributionByFunder.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Distribución por Financiador
-          </h2>
-          <div className="space-y-3">
+        <div style={{ padding: '16px 20px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', marginBottom: 24 }}>
+          <div className="section-hd" style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 500 }}>Distribución por Financiador</h3>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {distributionByFunder.map((item) => (
-              <div key={item.name} className="flex items-center gap-4">
-                <div className="w-32 text-sm font-medium text-gray-700 truncate">
+              <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ width: 128, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.name}
                 </div>
-                <div className="flex-1 h-6 bg-gray-100 rounded overflow-hidden">
+                <div style={{ flex: 1, height: 6, background: 'var(--bg3)', borderRadius: 3, overflow: 'hidden' }}>
                   <div
-                    className="h-full bg-blue-500"
-                    style={{ width: `${(item.count / maxCount) * 100}%` }}
+                    style={{ height: '100%', background: 'var(--blue)', width: `${(item.count / maxCount) * 100}%` }}
                   />
                 </div>
-                <div className="w-12 text-right text-sm font-semibold text-gray-900">
+                <div style={{ width: 48, textAlign: 'right', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
                   {item.count}
                 </div>
               </div>
@@ -140,36 +141,22 @@ export default function RadarSection({ opportunities }: RadarSectionProps) {
       />
 
       {/* Opportunities Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="data-table-wrap">
         {filteredOpps.length === 0 ? (
-          <div className="p-8 text-center text-gray-600">
+          <div className="empty-state">
             No hay oportunidades que coincidan con los filtros seleccionados
           </div>
         ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Título
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Financiador
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Monto COP
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Vencimiento
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Estado
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
-                  Urgencia
-                </th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">
-                  Expandir
-                </th>
+                <th>Título</th>
+                <th>Financiador</th>
+                <th>Monto COP</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+                <th>Urgencia</th>
+                <th style={{ width: 32 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -187,7 +174,7 @@ export default function RadarSection({ opportunities }: RadarSectionProps) {
       </div>
 
       {/* Summary */}
-      <div className="text-sm text-gray-600 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <div style={{ fontSize: 12, color: 'var(--muted)', padding: '12px 16px', background: 'var(--bg3)', borderRadius: 'var(--r)', border: '1px solid var(--border)', marginTop: 24 }}>
         Mostrando <strong>{filteredOpps.length}</strong> de{' '}
         <strong>{opportunities.length}</strong> oportunidades
       </div>

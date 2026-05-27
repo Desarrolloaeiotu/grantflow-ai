@@ -44,8 +44,10 @@ export default function ContactosSection({
     : byFunder
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Contactos</h1>
+    <div className="page">
+      <div className="section-hd">
+        <h2>Contactos</h2>
+      </div>
 
       <FilterBar
         activeFilters={filters}
@@ -54,14 +56,14 @@ export default function ContactosSection({
         sectores={sectores}
       />
 
-      <div className="space-y-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {Object.entries(filteredFunders).map(([funderName, funderContacts]) => (
-          <div key={funderName} className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              {funderName}
-            </h2>
+          <div key={funderName} style={{ padding: '16px 20px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)' }}>
+            <div className="section-hd" style={{ marginBottom: 16 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 500 }}>{funderName}</h3>
+            </div>
 
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {funderContacts.map((contact) => (
                 <ContactRow
                   key={contact.id}
@@ -74,7 +76,7 @@ export default function ContactosSection({
         ))}
 
         {Object.keys(filteredFunders).length === 0 && (
-          <div className="p-8 text-center text-gray-600">
+          <div className="empty-state">
             No hay contactos para los filtros seleccionados
           </div>
         )}
@@ -108,25 +110,25 @@ function ContactRow({ contact, onContactado }: ContactRowProps) {
   }
 
   return (
-    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-      <div className="flex justify-between items-start mb-3">
+    <div style={{ padding: 12, background: 'var(--bg3)', borderRadius: 'var(--r)', border: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <div>
-          <h3 className="font-semibold text-gray-900">{contact.full_name}</h3>
-          <p className="text-sm text-gray-600">{contact.title}</p>
+          <h3 style={{ fontWeight: 600, color: 'var(--text)' }}>{contact.full_name}</h3>
+          <p style={{ fontSize: 12, color: 'var(--muted)' }}>{contact.title}</p>
         </div>
         {contact.email_verified && (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 8px', borderRadius: '999px', fontSize: 11, fontWeight: 500, background: 'var(--go-bg)', color: 'var(--go)' }}>
             ✓ Verificado
           </span>
         )}
       </div>
 
-      <div className="mb-3 text-sm">
-        <p className="text-gray-700">
-          <span className="font-semibold">Email:</span> {contact.email}
+      <div style={{ marginBottom: 12, fontSize: 12 }}>
+        <p style={{ color: 'var(--text)' }}>
+          <span style={{ fontWeight: 600 }}>Email:</span> {contact.email}
         </p>
         {contact.linkedin_url && (
-          <p className="text-blue-600 hover:underline">
+          <p style={{ color: 'var(--blue)', textDecoration: 'underline' }}>
             <a href={contact.linkedin_url} target="_blank" rel="noopener noreferrer">
               LinkedIn
             </a>
@@ -134,14 +136,23 @@ function ContactRow({ contact, onContactado }: ContactRowProps) {
         )}
       </div>
 
-      <div className="flex gap-2">
+      <div style={{ display: 'flex', gap: 8 }}>
         <select
           disabled={isLoading}
           value={tipoInteraccion}
           onChange={(e) =>
             setTipoInteraccion(e.target.value as 'llamada' | 'email' | 'reunion')
           }
-          className="px-2 py-1 border border-gray-300 rounded text-xs"
+          style={{
+            padding: '5px 8px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r)',
+            fontSize: 12,
+            background: 'var(--bg2)',
+            color: 'var(--text)',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            opacity: isLoading ? 0.6 : 1,
+          }}
         >
           <option value="email">Email</option>
           <option value="llamada">Llamada</option>
@@ -150,7 +161,13 @@ function ContactRow({ contact, onContactado }: ContactRowProps) {
         <button
           disabled={isLoading}
           onClick={handleMarcar}
-          className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:bg-gray-400"
+          className="link-btn primary"
+          style={{
+            padding: '5px 12px',
+            fontSize: 12,
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            opacity: isLoading ? 0.6 : 1,
+          }}
         >
           {isLoading ? '...' : 'Marcar contactado'}
         </button>
