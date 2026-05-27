@@ -5,6 +5,7 @@ import {
   getContactosNacionales,
   generateAlerts,
 } from './data/nacional-queries'
+import { Opportunity, Contact, DashboardMetrics } from './types'
 import NacionalSidebar from './components/NacionalSidebar'
 import AlertasSection from './components/AlertasSection'
 import RadarSection from './components/RadarSection'
@@ -24,9 +25,9 @@ export default async function NacionalPage({
   const section = params.section || 'radar'
 
   // Fetch data server-side with error handling
-  let opportunities = []
-  let metrics = { detected: 0, reviewed: 0, in_crm: 0, cerrada: 0 }
-  let contacts = []
+  let opportunities: Opportunity[] = []
+  let metrics: DashboardMetrics = { detected: 0, reviewed: 0, in_crm: 0, cerrada: 0 }
+  let contacts: Contact[] = []
 
   try {
     const [opps, met, conts] = await Promise.all([
