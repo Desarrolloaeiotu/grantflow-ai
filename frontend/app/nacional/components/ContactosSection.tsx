@@ -87,7 +87,7 @@ interface ContactRowProps {
   contact: Contact
   onContactado: (
     id: string,
-    type: string,
+    type: 'llamada' | 'email' | 'reunion',
     note?: string
   ) => Promise<{ success: boolean; error?: string }>
 }
