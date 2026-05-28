@@ -39,17 +39,24 @@ export default function ExpandableRow({
     }
   }
 
-  const statusColors: Record<string, string> = {
-    detected: 'bg-gray-100 text-gray-700',
-    reviewed: 'bg-blue-100 text-blue-700',
-    in_crm: 'bg-green-100 text-green-700',
-    discarded: 'bg-purple-100 text-purple-700',
+  const statusBg: Record<string, string> = {
+    detected: 'rgba(241,245,249,1)',
+    reviewed: 'rgba(37,99,235,0.08)',
+    in_crm: 'rgba(5,150,105,0.08)',
+    discarded: 'rgba(124,58,237,0.08)',
   }
 
-  const urgencyColors: Record<string, string> = {
-    high: 'text-red-600',
-    medium: 'text-orange-600',
-    low: 'text-yellow-600',
+  const statusColor: Record<string, string> = {
+    detected: '#64748B',
+    reviewed: '#2563EB',
+    in_crm: '#059669',
+    discarded: '#7C3AED',
+  }
+
+  const urgencyColor: Record<string, string> = {
+    high: '#DC2626',
+    medium: '#D97706',
+    low: '#F59E0B',
   }
 
   const urgencyLabel = (urgency: string) => {
@@ -69,33 +76,45 @@ export default function ExpandableRow({
     <>
       <tr
         onClick={() => setIsExpanded(!isExpanded)}
-        className="border-b hover:bg-gray-50 cursor-pointer"
+        style={{
+          borderBottom: '1px solid var(--border)',
+          cursor: 'pointer',
+          backgroundColor: 'transparent',
+          transition: 'background-color 0.15s',
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg3)'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
       >
-        <td className="px-4 py-3 text-sm font-medium">{opportunity.title}</td>
-        <td className="px-4 py-3 text-sm">{opportunity.funder_name}</td>
-        <td className="px-4 py-3 text-sm">
+        <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>{opportunity.title}</td>
+        <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text)' }}>{opportunity.funder_name}</td>
+        <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text)' }}>
           ${(opportunity.amount_max_cop || 0).toLocaleString('es-CO')}
         </td>
-        <td className="px-4 py-3 text-sm">
+        <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text)' }}>
           {opportunity.deadline
             ? new Date(opportunity.deadline).toLocaleDateString('es-CO')
             : 'N/A'}
         </td>
-        <td className="px-4 py-3">
+        <td style={{ padding: '12px 16px' }}>
           <span
-            className={`px-2 py-1 rounded text-xs font-medium ${
-              statusColors[opportunity.status] || 'bg-gray-100'
-            }`}
+            style={{
+              padding: '4px 8px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 600,
+              backgroundColor: statusBg[opportunity.status] || 'var(--bg3)',
+              color: statusColor[opportunity.status] || 'var(--muted)',
+            }}
           >
             {opportunity.status}
           </span>
         </td>
-        <td className={`px-4 py-3 text-sm font-bold ${urgencyColors[opportunity.urgency]}`}>
+        <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: urgencyColor[opportunity.urgency] }}>
           {urgencyLabel(opportunity.urgency)}
         </td>
-        <td className="px-4 py-3 text-center">
+        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
           <button
-            className="text-lg"
+            style={{ fontSize: '16px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)' }}
             onClick={(e) => {
               e.stopPropagation()
               setIsExpanded(!isExpanded)
@@ -107,21 +126,30 @@ export default function ExpandableRow({
       </tr>
 
       {isExpanded && (
-        <tr className="bg-gray-50 border-b">
-          <td colSpan={7} className="px-4 py-4">
-            <div className="space-y-4">
+        <tr style={{ backgroundColor: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
+          <td colSpan={7} style={{ padding: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <p className="text-xs font-semibold text-gray-600 mb-1">Descripción</p>
-                <p className="text-sm text-gray-700">
+                <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--muted)', marginBottom: '4px' }}>Descripción</p>
+                <p style={{ fontSize: '13px', color: 'var(--text)' }}>
                   {opportunity.description || 'Sin descripción'}
                 </p>
               </div>
 
-              <div className="flex gap-2">
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <select
                   disabled={isLoading}
                   onChange={(e) => handleStateChange(e.target.value)}
-                  className="px-2 py-1 border border-gray-300 rounded text-xs"
+                  style={{
+                    padding: '6px 8px',
+                    border: '1px solid var(--border)',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    color: 'var(--text)',
+                    backgroundColor: 'var(--bg2)',
+                    cursor: 'pointer',
+                    opacity: isLoading ? 0.5 : 1,
+                  }}
                 >
                   <option value="">Cambiar estado</option>
                   <option value="detected">Detectada</option>
@@ -136,13 +164,32 @@ export default function ExpandableRow({
                   onChange={(e) => setNoteText(e.target.value)}
                   placeholder="Agregar nota..."
                   disabled={isLoading}
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                  style={{
+                    flex: 1,
+                    padding: '6px 8px',
+                    border: '1px solid var(--border)',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    color: 'var(--text)',
+                    backgroundColor: 'var(--bg2)',
+                    opacity: isLoading ? 0.5 : 1,
+                  }}
                 />
 
                 <button
                   onClick={handleAddNote}
                   disabled={isLoading || !noteText.trim()}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:bg-gray-400"
+                  style={{
+                    padding: '6px 12px',
+                    backgroundColor: isLoading || !noteText.trim() ? 'var(--muted2)' : 'var(--blue)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: isLoading || !noteText.trim() ? 'not-allowed' : 'pointer',
+                    opacity: isLoading || !noteText.trim() ? 0.6 : 1,
+                  }}
                 >
                   {isLoading ? '...' : 'Agregar'}
                 </button>

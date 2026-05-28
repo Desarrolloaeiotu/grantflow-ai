@@ -6,15 +6,15 @@ interface OpportunityCardProps {
 }
 
 const urgencyBadge = {
-  high: { bg: 'bg-red-100', text: 'text-red-700', icon: '🔴' },
-  medium: { bg: 'bg-orange-100', text: 'text-orange-700', icon: '🟠' },
-  low: { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: '🟡' },
+  high: { bg: '#DC2626', bgLight: 'rgba(220,38,38,0.08)', icon: '🔴' },
+  medium: { bg: '#D97706', bgLight: 'rgba(217,119,6,0.08)', icon: '🟠' },
+  low: { bg: '#F59E0B', bgLight: 'rgba(245,158,11,0.08)', icon: '🟡' },
 }
 
 const decisionBadge = {
-  go: { bg: 'bg-green-100', text: 'text-green-700', label: 'GO' },
-  no_go: { bg: 'bg-red-100', text: 'text-red-700', label: 'NO GO' },
-  pending: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Pendiente' },
+  go: { bg: '#059669', bgLight: 'rgba(5,150,105,0.08)', label: 'GO' },
+  no_go: { bg: '#DC2626', bgLight: 'rgba(220,38,38,0.08)', label: 'NO GO' },
+  pending: { bg: '#64748B', bgLight: 'rgba(100,116,139,0.08)', label: 'Pendiente' },
 }
 
 export default function OpportunityCard({
@@ -33,29 +33,55 @@ export default function OpportunityCard({
   return (
     <div
       onClick={onClick}
-      className="p-4 border border-gray-200 rounded-lg bg-white hover:shadow-md cursor-pointer transition"
+      style={{
+        padding: '16px',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--r)',
+        backgroundColor: 'var(--bg2)',
+        cursor: 'pointer',
+        transition: 'box-shadow 0.2s, transform 0.2s',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
+        e.currentTarget.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = 'none'
+        e.currentTarget.style.transform = 'translateY(0)'
+      }}
     >
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="font-semibold text-sm text-gray-900 flex-1">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+        <h3 style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text)', flex: 1 }}>
           {opportunity.title}
         </h3>
-        <span className={`px-2 py-1 rounded text-xs font-medium ${badge.bg} ${badge.text}`}>
+        <span
+          style={{
+            padding: '4px 8px',
+            borderRadius: '6px',
+            fontSize: '11px',
+            fontWeight: 600,
+            backgroundColor: badge.bgLight,
+            color: badge.bg,
+            marginLeft: '8px',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {badge.icon} {urgencyDays[opportunity.urgency]}
         </span>
       </div>
 
-      <p className="text-xs text-gray-600 mb-3">{opportunity.funder_name}</p>
+      <p style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '12px' }}>{opportunity.funder_name}</p>
 
-      <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px', fontSize: '11px' }}>
         <div>
-          <span className="font-semibold text-gray-700">Monto:</span>
-          <p className="text-gray-600">
+          <span style={{ fontWeight: 600, color: 'var(--text)' }}>Monto:</span>
+          <p style={{ color: 'var(--muted)', marginTop: '2px' }}>
             ${(opportunity.amount_max_cop || 0).toLocaleString('es-CO')}
           </p>
         </div>
         <div>
-          <span className="font-semibold text-gray-700">Vencimiento:</span>
-          <p className="text-gray-600">
+          <span style={{ fontWeight: 600, color: 'var(--text)' }}>Vencimiento:</span>
+          <p style={{ color: 'var(--muted)', marginTop: '2px' }}>
             {opportunity.deadline
               ? new Date(opportunity.deadline).toLocaleDateString('es-CO')
               : 'N/A'}
@@ -63,13 +89,29 @@ export default function OpportunityCard({
         </div>
       </div>
 
-      <div className="flex gap-2">
-        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <span
+          style={{
+            padding: '4px 8px',
+            backgroundColor: 'var(--blue-bg)',
+            color: 'var(--blue)',
+            borderRadius: '6px',
+            fontSize: '11px',
+            fontWeight: 600,
+          }}
+        >
           {opportunity.status}
         </span>
         {opportunity.decision !== 'pending' && (
           <span
-            className={`px-2 py-1 rounded text-xs font-medium ${decBadge.bg} ${decBadge.text}`}
+            style={{
+              padding: '4px 8px',
+              backgroundColor: decBadge.bgLight,
+              color: decBadge.bg,
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 600,
+            }}
           >
             {decBadge.label}
           </span>

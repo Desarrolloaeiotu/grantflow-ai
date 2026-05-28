@@ -32,17 +32,27 @@ export default async function OpportunitiesPage({
   const opportunities = list?.items || []
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <main className="flex-1 overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Oportunidades Global</h1>
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg)' }}>
+      <main style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          backgroundColor: 'var(--bg2)',
+          borderBottom: '1px solid var(--border)',
+          padding: '16px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          zIndex: 10,
+        }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)' }}>Oportunidades Global</h1>
           <RunScraperButton
             source="grantsgov"
             label="▶ Ejecutar Scraper Global"
           />
         </div>
 
-        <Suspense fallback={<div className="p-6">Cargando...</div>}>
+        <Suspense fallback={<div style={{ padding: '24px', color: 'var(--muted)' }}>Cargando...</div>}>
           {section === 'alertas' && (
             <AlertasSection opportunities={opportunities} />
           )}
