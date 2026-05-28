@@ -5,9 +5,9 @@
     "description": "API de inteligencia comercial para prospección estratégica de oportunidades de financiamiento — aeioTU",
     "version": "1.0.0"
   },
-  "host": "NGROK_URL_PLACEHOLDER",
+  "host": "localhost:8000",
   "basePath": "/api/v1",
-  "schemes": ["https"],
+  "schemes": ["http"],
   "consumes": ["application/json"],
   "produces": ["application/json"],
   "securityDefinitions": {
