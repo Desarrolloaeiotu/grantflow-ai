@@ -30,7 +30,7 @@
           "authentication": "httpHeaderAuth",
           "genericAuth": {
             "headers": {
-              "X-API-Key": ""
+              "X-API-Key": "{{ env.GRANTFLOW_API_KEY }}"
             }
           }
         },
