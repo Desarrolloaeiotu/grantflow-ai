@@ -23,51 +23,33 @@
       "get": {
         "operationId": "ObtenerPipelineActivo",
         "summary": "Obtener oportunidades GO del pipeline",
-        "description": "Retorna lista de oportunidades con filtros opcionales. Útil para responder: ¿Qué oportunidades GO tenemos?, ¿Cuáles vencen esta semana?, ¿Cuál es el score de las oportunidades?",
+        "description": "Retorna lista de oportunidades con filtros. Útil para: ¿Qué oportunidades GO tenemos? ¿Cuáles vencen esta semana?",
         "parameters": [
           {
             "name": "decision",
             "in": "query",
-            "description": "Filtrar por decisión: go, no_go, pending",
             "type": "string",
-            "enum": ["go", "no_go", "pending"]
+            "enum": ["go", "no_go", "pending"],
+            "description": "Filtrar por decisión"
           },
           {
             "name": "window",
             "in": "query",
-            "description": "Ventana de mercado: funding_colombia, funding_global, strategic, latam",
-            "type": "string"
+            "type": "string",
+            "description": "Ventana de mercado"
           },
           {
             "name": "urgency",
             "in": "query",
-            "description": "Urgencia: high, medium, low",
             "type": "string",
-            "enum": ["high", "medium", "low"]
+            "enum": ["high", "medium", "low"],
+            "description": "Urgencia"
           },
           {
             "name": "score_min",
             "in": "query",
-            "description": "Score mínimo (0-10)",
-            "type": "integer"
-          },
-          {
-            "name": "source",
-            "in": "query",
-            "description": "Filtrar por fuente del scraper",
-            "type": "string"
-          },
-          {
-            "name": "page",
-            "in": "query",
             "type": "integer",
-            "default": 1
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "type": "integer",
-            "default": 25
+            "description": "Score mínimo (0-10)"
           }
         ],
         "responses": {
@@ -76,26 +58,10 @@
             "schema": {
               "type": "object",
               "properties": {
-                "items": {
-                  "type": "array",
-                  "items": {
-                    "type": "object"
-                  }
-                },
-                "total": {
-                  "type": "integer"
-                },
-                "page": {
-                  "type": "integer"
-                },
-                "size": {
-                  "type": "integer"
-                }
+                "items": {"type": "array"},
+                "total": {"type": "integer"}
               }
             }
-          },
-          "401": {
-            "description": "API Key inválido o faltante"
           }
         }
       }
@@ -103,45 +69,21 @@
     "/funders": {
       "get": {
         "operationId": "BuscarFinanciador",
-        "summary": "Buscar financiadores por nombre",
-        "description": "Retorna lista de financiadores que coinciden con el criterio de búsqueda. Útil para: ¿Tenemos historial con X?, ¿Cuál es el ticket mínimo de Y?",
+        "summary": "Buscar financiador",
+        "description": "Busca un financiador por nombre. Útil para: ¿Tenemos historial con X?",
         "parameters": [
           {
             "name": "name",
             "in": "query",
-            "description": "Nombre del financiador",
-            "type": "string"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "type": "integer",
-            "default": 1
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "type": "integer",
-            "default": 25
+            "type": "string",
+            "required": true,
+            "description": "Nombre del financiador"
           }
         ],
         "responses": {
           "200": {
-            "description": "Lista de financiadores",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "items": {
-                  "type": "array",
-                  "items": {
-                    "type": "object"
-                  }
-                },
-                "total": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Información del financiador",
+            "schema": {"type": "object"}
           }
         }
       }
@@ -149,8 +91,8 @@
     "/rag/query": {
       "post": {
         "operationId": "ObtenerLeccionesAprendidas",
-        "summary": "Búsqueda semántica en base de conocimiento",
-        "description": "Realiza búsqueda semántica en documentos de lecciones aprendidas y propuestas exitosas. Útil para: ¿Qué aprendimos de proyectos con X?, ¿Hay propuestas similares?",
+        "summary": "Buscar lecciones aprendidas",
+        "description": "Búsqueda semántica en documentos de lecciones aprendidas. Útil para: ¿Qué aprendimos de proyectos con X?",
         "parameters": [
           {
             "name": "body",
@@ -159,39 +101,16 @@
             "schema": {
               "type": "object",
               "properties": {
-                "query": {
-                  "type": "string",
-                  "example": "formación docente en zonas rurales"
-                },
-                "top_k": {
-                  "type": "integer",
-                  "default": 5
-                }
-              },
-              "required": ["query"]
+                "query": {"type": "string"},
+                "top_k": {"type": "integer", "default": 5}
+              }
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Resultados de búsqueda semántica",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "query": {
-                  "type": "string"
-                },
-                "results": {
-                  "type": "array",
-                  "items": {
-                    "type": "object"
-                  }
-                },
-                "total_found": {
-                  "type": "integer"
-                }
-              }
-            }
+            "description": "Resultados de búsqueda",
+            "schema": {"type": "object"}
           }
         }
       }
@@ -199,8 +118,8 @@
     "/contacts/verify": {
       "post": {
         "operationId": "VerificarEmailCEO",
-        "summary": "Verificar email de contacto",
-        "description": "Valida si un email existe y es activo. Útil para: ¿El email del CEO de X es válido?, ¿Puedo contactar a [email]?",
+        "summary": "Verificar email de CEO",
+        "description": "Verifica si un email es válido usando Apollo.io",
         "parameters": [
           {
             "name": "body",
@@ -209,48 +128,31 @@
             "schema": {
               "type": "object",
               "properties": {
-                "email": {
-                  "type": "string",
-                  "format": "email"
-                },
-                "name": {
-                  "type": "string"
-                }
-              },
-              "required": ["email"]
+                "email": {"type": "string"},
+                "name": {"type": "string"}
+              }
             }
           }
         ],
         "responses": {
           "200": {
             "description": "Resultado de verificación",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "email": {
-                  "type": "string"
-                },
-                "verified": {
-                  "type": "boolean"
-                }
-              }
-            }
+            "schema": {"type": "object"}
           }
         }
       }
     },
-    "/opportunities/{id}/status": {
+    "/opportunities/{opportunity_id}/status": {
       "patch": {
         "operationId": "ActualizarEstadoOportunidad",
         "summary": "Actualizar estado de oportunidad",
-        "description": "Cambia el estado, decisión o urgencia de una oportunidad. Útil para: Marca esta oportunidad como GO, Mueve X al CRM",
+        "description": "Cambia el estado de una oportunidad (detected, reviewed, in_crm, discarded)",
         "parameters": [
           {
-            "name": "id",
+            "name": "opportunity_id",
             "in": "path",
-            "required": true,
-            "description": "ID de la oportunidad",
-            "type": "string"
+            "type": "string",
+            "required": true
           },
           {
             "name": "body",
@@ -259,18 +161,8 @@
             "schema": {
               "type": "object",
               "properties": {
-                "decision": {
-                  "type": "string",
-                  "enum": ["go", "no_go", "pending"]
-                },
-                "status": {
-                  "type": "string",
-                  "enum": ["detected", "reviewed", "in_crm", "discarded"]
-                },
-                "urgency": {
-                  "type": "string",
-                  "enum": ["high", "medium", "low"]
-                }
+                "status": {"type": "string"},
+                "decision": {"type": "string"}
               }
             }
           }
@@ -278,12 +170,7 @@
         "responses": {
           "200": {
             "description": "Oportunidad actualizada",
-            "schema": {
-              "type": "object"
-            }
-          },
-          "404": {
-            "description": "Oportunidad no encontrada"
+            "schema": {"type": "object"}
           }
         }
       }
