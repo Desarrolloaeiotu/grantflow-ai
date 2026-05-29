@@ -101,7 +101,14 @@
       "PowerShell(& \"C:\\\\Users\\\\Luis Mendez\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe\" -m pip install pytest-asyncio beautifulsoup4 lxml structlog httpx --quiet 2>&1)",
       "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\Luis Mendez\\\\OneDrive - Fundación Carulla - Aeiotu\\\\Escritorio\\\\Grantflow app\\\\frontend\\\\.next\" -ErrorAction SilentlyContinue)",
       "Bash(Write-Host \"Cache .next eliminado\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(curl -s http://localhost:8000/api/v1/opportunities?decision=go -w \"\\\\nStatus: %{http_code}\\\\n\")",
+      "Bash(curl -s -X POST \"http://localhost:8000/api/v1/scrape/run\" -H \"X-API-Key: grantflow_dev_key_2026\" -w \"\\\\nStatus: %{http_code}\\\\n\")",
+      "Bash(curl -s -X POST \"http://localhost:8000/api/v1/scrape/run\" -H \"X-API-Key: grantflow_dev_key_2026\")",
+      "Bash(curl -s -X POST \"http://localhost:8000/api/v1/scrape/run\" -H \"X-API-Key: test-api-key-123456\")",
+      "Bash(pkill -f \"node\")",
+      "PowerShell(Get-Process node -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Luis Mendez\\OneDrive - Fundaci�n Carulla - Aeiotu\\Escritorio\\Grantflow app\\frontend\\app\\nacional",

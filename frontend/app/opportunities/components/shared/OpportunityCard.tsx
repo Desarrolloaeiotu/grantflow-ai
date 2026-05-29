@@ -3,13 +3,12 @@
 import { useState } from 'react'
 import { Opportunity } from '../../types'
 import OpportunityEvaluationModal, { EvaluationData } from './OpportunityEvaluationModal'
-import { evaluarOportunidad } from '../../actions/nacional-actions'
+import { evaluarOportunidad } from '../../actions/opportunities-actions'
 import styles from './OpportunityCard.module.css'
 
 interface OpportunityCardProps {
   opportunity: Opportunity
   onStateChange?: (newState: string) => void
-  onAddNote?: (note: string) => void
 }
 
 const CRITERION_NAMES = {
@@ -65,7 +64,6 @@ export default function OpportunityCard({
       throw new Error(result.error || 'Error al guardar evaluación')
     }
 
-    // Update state if successful
     if (data.decision === 'accept') {
       handleStateChange('in_crm')
     }
@@ -77,11 +75,11 @@ export default function OpportunityCard({
   return (
     <>
     <div className={styles.card}>
-      {/* COMPACT HEADER — Título + Score + Urgencia */}
+      {/* COMPACT HEADER */}
       <div className={styles.compactHeader}>
         <div className={styles.titleWrapper}>
           <h3 className={styles.title}>{opportunity.title}</h3>
-          <p className={styles.funderName}>{opportunity.funder_name}</p>
+          <p className={styles.funderName}>{opportunity.funder_name || '—'}</p>
         </div>
 
         <div className={styles.headerMetrics}>
@@ -97,9 +95,9 @@ export default function OpportunityCard({
         </div>
       </div>
 
-      {/* MAIN CONTENT — 2 Columns Layout */}
+      {/* MAIN CONTENT */}
       <div className={styles.mainContent}>
-        {/* LEFT COLUMN — Info */}
+        {/* LEFT COLUMN */}
         <div className={styles.leftColumn}>
           {/* Meta Info */}
           <div className={styles.metaBox}>
@@ -113,78 +111,18 @@ export default function OpportunityCard({
             </div>
           </div>
 
-          {/* Contact Section */}
+          {/* Funder Info */}
           <div className={styles.contactBox}>
-            <h4 className={styles.boxTitle}>CONTACTO CEO</h4>
-            <div className={styles.contactInfo}>
-              <p className={styles.contactItem}>
-                <span className={styles.metaLabel}>Nombre:</span>
-                <strong>{opportunity.ceo_name || '—'}</strong>
-              </p>
-              {opportunity.ceo_title && (
-                <p className={styles.contactItem}>
-                  <span className={styles.metaLabel}>Cargo:</span>
-                  <span>{opportunity.ceo_title}</span>
-                </p>
-              )}
-              <p className={styles.contactItem}>
-                <span className={styles.metaLabel}>Email:</span>
-                {opportunity.ceo_email ? (
-                  <>
-                    <a href={`mailto:${opportunity.ceo_email}`} className={styles.link}>
-                      {opportunity.ceo_email}
-                    </a>
-                    {opportunity.ceo_email_verified && (
-                      <span className={styles.verified}>✓</span>
-                    )}
-                  </>
-                ) : (
-                  <span className={styles.emptyState}>—</span>
-                )}
-              </p>
-              {opportunity.ceo_linkedin_url && (
-                <p className={styles.contactItem}>
-                  <span className={styles.metaLabel}>LinkedIn:</span>
-                  <a href={opportunity.ceo_linkedin_url} target="_blank" rel="noopener noreferrer" className={styles.link}>
-                    Ver perfil
-                  </a>
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Organization */}
-          <div className={styles.contactBox}>
-            <h4 className={styles.boxTitle}>ORGANIZACIÓN</h4>
+            <h4 className={styles.boxTitle}>FINANCIADOR</h4>
             <div className={styles.contactInfo}>
               <p className={styles.contactItem}>
                 <strong>{opportunity.funder_name || '—'}</strong>
-              </p>
-              <p className={styles.contactItem}>
-                <span className={styles.metaLabel}>Web:</span>
-                {opportunity.org_website ? (
-                  <a href={opportunity.org_website} target="_blank" rel="noopener noreferrer" className={styles.link}>
-                    {opportunity.org_website}
-                  </a>
-                ) : (
-                  <span className={styles.emptyState}>—</span>
-                )}
-              </p>
-              <p className={styles.contactItem}>
-                <span className={styles.metaLabel}>Email:</span>
-                {opportunity.org_email ? (
-                  <a href={`mailto:${opportunity.org_email}`} className={styles.link}>
-                    {opportunity.org_email}
-                  </a>
-                ) : (
-                  <span className={styles.emptyState}>—</span>
-                )}
               </p>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN — Scoring */}
+        {/* RIGHT COLUMN */}
         {opportunity.score_details && (
           <div className={styles.rightColumn}>
             <div className={styles.scoringBox}>
@@ -236,14 +174,6 @@ export default function OpportunityCard({
             📄 Ver
           </a>
         )}
-        {opportunity.ceo_email && (
-          <a
-            href={`mailto:${opportunity.ceo_email}`}
-            className={`${styles.actionButton} ${styles.secondary}`}
-          >
-            ✉ Email
-          </a>
-        )}
         <button
           className={`${styles.actionButton} ${styles.primary}`}
           onClick={() => setIsModalOpen(true)}
@@ -263,19 +193,6 @@ export default function OpportunityCard({
     />
     </>
   )
-}
-
-function sanitizeHTML(html: string): string {
-  if (!html) return ''
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .substring(0, 200)
 }
 
 function calculateDaysToDeadline(deadline: string | null | undefined): number {

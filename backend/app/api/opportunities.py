@@ -32,7 +32,7 @@ async def list_opportunities(
     size: int = Query(25, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     authorization: str | None = Query(None, alias="Authorization"),
-    _auth: None = Depends(require_api_key),
+    # _auth: None = Depends(require_api_key),  # DISABLED for development
 ) -> OpportunityList:
     from datetime import date, timedelta
 

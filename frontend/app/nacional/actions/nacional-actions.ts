@@ -132,3 +132,43 @@ export async function marcarContactado(
     }
   }
 }
+
+// Evaluate opportunity (accept/reject with observations)
+interface EvaluateData {
+  decision: 'accept' | 'reject'
+  reason?: string
+  observations: string
+}
+
+export async function evaluarOportunidad(
+  opportunityId: string,
+  data: EvaluateData
+): Promise<ActionResult> {
+  try {
+    const res = await fetch(
+      `${API_URL}/api/v1/opportunities/${opportunityId}/evaluate`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          decision: data.decision,
+          reason: data.reason || null,
+          observations: data.observations,
+          evaluated_at: new Date().toISOString(),
+        }),
+      }
+    )
+
+    if (!res.ok) {
+      return { success: false, error: `HTTP ${res.status}: ${res.statusText}` }
+    }
+
+    revalidatePath('/nacional')
+    return { success: true }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
+}

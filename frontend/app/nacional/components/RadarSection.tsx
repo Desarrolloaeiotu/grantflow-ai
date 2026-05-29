@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Opportunity, FilterState } from '../types'
 import FilterBar from './shared/FilterBar'
-import ExpandableRow from './shared/ExpandableRow'
+import OpportunityCard from './shared/OpportunityCard'
 import { cambiarEstadoOportunidad, agregarNotaOportunidad } from '../actions/nacional-actions'
 
 interface RadarSectionProps {
@@ -140,38 +140,30 @@ export default function RadarSection({ opportunities }: RadarSectionProps) {
         sectores={sectores}
       />
 
-      {/* Opportunities Table */}
-      <div className="data-table-wrap">
-        {filteredOpps.length === 0 ? (
-          <div className="empty-state">
-            No hay oportunidades que coincidan con los filtros seleccionados
-          </div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Título</th>
-                <th>Financiador</th>
-                <th>Monto COP</th>
-                <th>Vencimiento</th>
-                <th>Estado</th>
-                <th>Urgencia</th>
-                <th style={{ width: 32 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOpps.map((opp) => (
-                <ExpandableRow
-                  key={opp.id}
-                  opportunity={opp}
-                  onStateChange={(newState) => handleStateChange(opp.id, newState)}
-                  onAddNote={(note) => handleAddNote(opp.id, note)}
-                />
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {/* Opportunities Grid */}
+      {filteredOpps.length === 0 ? (
+        <div className="empty-state">
+          No hay oportunidades que coincidan con los filtros seleccionados
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(520px, 1fr))',
+            gap: '20px',
+            marginBottom: '24px',
+          }}
+        >
+          {filteredOpps.map((opp) => (
+            <OpportunityCard
+              key={opp.id}
+              opportunity={opp}
+              onStateChange={(newState) => handleStateChange(opp.id, newState)}
+              onAddNote={(note) => handleAddNote(opp.id, note)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Summary */}
       <div style={{ fontSize: 12, color: 'var(--muted)', padding: '12px 16px', background: 'var(--bg3)', borderRadius: 'var(--r)', border: '1px solid var(--border)', marginTop: 24 }}>

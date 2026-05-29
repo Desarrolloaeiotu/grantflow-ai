@@ -1,0 +1,352 @@
+/* Opportunity Evaluation Modal — Bloomberg Híbrido */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+/* ═══ BACKDROP ═══ */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ═══ MODAL ═══ */
+.modal {
+  --bg-primary: #fafafa;
+  --bg-secondary: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+  --accent-dark: #1e293b;
+  --accent-light: #cbd5e1;
+  --success: #059669;
+  --danger: #dc2626;
+  --info: #0284c7;
+
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* ─── HEADER ─── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.title {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  color: var(--text-primary);
+}
+
+/* ─── BODY ─── */
+.body {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.oppTitle {
+  padding: 16px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid var(--info);
+  border-radius: 6px;
+  border-left: 4px solid var(--info);
+}
+
+.oppTitle p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-dark);
+  line-height: 1.5;
+}
+
+/* ─── SECTION ─── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--accent-dark);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* ─── DECISION BUTTONS ─── */
+.decisionButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.decisionButton {
+  padding: 16px 12px;
+  background: white;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.3px;
+}
+
+.decisionButton:hover:not(:disabled) {
+  border-color: var(--accent-dark);
+  background: #f8fafc;
+}
+
+.decisionButton.accept {
+  color: var(--success);
+}
+
+.decisionButton.accept.selected {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: var(--success);
+  color: var(--success);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+}
+
+.decisionButton.reject {
+  color: var(--danger);
+}
+
+.decisionButton.reject.selected {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: var(--danger);
+  color: var(--danger);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}
+
+.icon {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* ─── SELECT ─── */
+.select {
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.select:hover {
+  border-color: var(--accent-dark);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--info);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+
+.select option {
+  padding: 8px;
+  background: white;
+  color: var(--text-primary);
+}
+
+/* ─── TEXTAREA ─── */
+.textarea {
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 12px;
+  color: var(--text-primary);
+  resize: vertical;
+  transition: all 0.15s ease;
+  line-height: 1.5;
+}
+
+.textarea:hover {
+  border-color: var(--accent-dark);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--info);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+}
+
+.textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+/* ─── ERROR ─── */
+.error {
+  padding: 10px 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 3px solid var(--danger);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ─── FOOTER ─── */
+.footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-top: 1px solid var(--border-color);
+}
+
+.button {
+  padding: 10px 16px;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--accent-dark);
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button.secondary {
+  color: var(--text-primary);
+}
+
+.button.secondary:hover:not(:disabled) {
+  background: white;
+}
+
+.button.primary {
+  background: linear-gradient(135deg, var(--info) 0%, #0369a1 100%);
+  color: white;
+  border: none;
+}
+
+.button.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0284c7 0%, #0284c7 100%);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 600px) {
+  .modal {
+    max-width: 95%;
+    max-height: 95vh;
+  }
+
+  .body {
+    padding: 16px;
+  }
+
+  .decisionButtons {
+    gap: 8px;
+  }
+
+  .decisionButton {
+    padding: 12px 8px;
+    font-size: 11px;
+  }
+
+  .footer {
+    gap: 8px;
+  }
+}
