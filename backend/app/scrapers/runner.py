@@ -37,6 +37,9 @@ from app.services.scoring_engine import ScoringEngine
 
 logger = structlog.get_logger()
 
+# Limit concurrent scrapers to avoid overloading
+MAX_CONCURRENT = 4
+
 SCRAPERS = {
     "nacional_colombia": NacionalColombiaScraper,  # 5am — prioridad nacional
     "grantsgov": GrantsGovScraper,
@@ -168,12 +171,43 @@ async def run_scraper(name: str, do_score: bool = False) -> int:
 
 
 async def main(source: str | None = None, do_score: bool = False) -> None:
-    targets = [source] if source else list(SCRAPERS.keys())
-    total = 0
-    for name in targets:
-        count = await run_scraper(name, do_score=do_score)
-        total += count
-    logger.info("All scrapers done", total_persisted=total)
+    """Ejecuta todos los scrapers: nacional_colombia primero, resto en paralelo."""
+    if source:
+        # Single scraper: run sequentially as before
+        count = await run_scraper(source, do_score=do_score)
+        logger.info("Scraper done", scraper=source, total_persisted=count)
+        return
+
+    log = logger.bind(action="run_all_scrapers")
+    log.info("Starting scraper run", max_concurrent=MAX_CONCURRENT)
+
+    # 1. nacional_colombia PRIMERO (prioridad máxima)
+    nacional_count = await run_scraper("nacional_colombia", do_score=do_score)
+
+    # 2. Scrapers secundarios en paralelo con semáforo para limitar concurrencia
+    secondary_scrapers = [n for n in SCRAPERS if n != "nacional_colombia"]
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT)
+
+    async def run_with_semaphore(name: str) -> int:
+        async with semaphore:
+            return await run_scraper(name, do_score=do_score)
+
+    # Ejecutar en paralelo, permitiendo que fallos individuales no bloqueen otros
+    results = await asyncio.gather(
+        *[run_with_semaphore(name) for name in secondary_scrapers],
+        return_exceptions=True,
+    )
+
+    # Consolidar resultados (ignorar excepciones)
+    secondary_count = sum(r for r in results if isinstance(r, int))
+    total = nacional_count + secondary_count
+
+    log.info(
+        "All scrapers done",
+        nacional=nacional_count,
+        secondary=secondary_count,
+        total_persisted=total,
+    )
 
 
 if __name__ == "__main__":

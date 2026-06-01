@@ -20,6 +20,7 @@ Keywords busca automáticamente:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import xml.etree.ElementTree as ET
@@ -32,6 +33,7 @@ from bs4 import BeautifulSoup
 
 from app.schemas.opportunity import OpportunityCreate
 from app.scrapers.base import BaseScraper, ScraperError
+from app.services.alert_service import AlertService
 
 logger = structlog.get_logger()
 
@@ -1117,6 +1119,16 @@ class NacionalColombiaScraper(BaseScraper):
 
         return None
 
+    async def _alert_google_block(self, status_code: int) -> None:
+        """Alerta a Slack cuando Google bloquea por rate limit o acceso."""
+        alert_service = AlertService()
+        message = (
+            f"🚨 *Google Search IP Block Detected* — Status {status_code}\n"
+            f"Scraper `nacional_colombia` hit rate limit while searching for opportunities.\n"
+            f"Automatic retry in next scheduled run. Check VPS IP blocklist if persistent."
+        )
+        await alert_service.send_slack(message, channel="#dev-alerts")
+        logger.warning("Google block alert sent to Slack", status_code=status_code)
 
     async def _fetch_general_web_search(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
         """Realiza una búsqueda general en la web para detectar convocatorias en todo el internet."""
@@ -1137,17 +1149,22 @@ class NacionalColombiaScraper(BaseScraper):
         # Seleccionar 3 consultas al azar para evitar rate limit de Google
         selected_queries = random.sample(queries, min(len(queries), 3))
 
-        for query in selected_queries:
+        for idx, query in enumerate(selected_queries):
+            # Agregar delay entre queries para evitar bloqueo IP
+            if idx > 0:
+                await asyncio.sleep(random.uniform(3, 5))
+
             try:
                 search_url = "https://www.google.com/search"
                 params = {"q": query}
                 resp = await client.get(search_url, params=params, timeout=15)
                 resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, "lxml")
-                
+
                 search_results = _extract_google_search_links(soup)
-                
-                for title, href in search_results[:10]:
+
+                # Limitar a 5 resultados por query (antes era 10)
+                for title, href in search_results[:5]:
                     items.append({
                         "title": title[:200],
                         "url": href,
@@ -1155,7 +1172,20 @@ class NacionalColombiaScraper(BaseScraper):
                         "funder": "Búsqueda Web General",
                         "search_query": query
                     })
-                    
+
+            except httpx.HTTPStatusError as exc:
+                # Detectar bloqueos de Google (403, 429)
+                if exc.response.status_code in (403, 429):
+                    logger.warning(
+                        "Google blocking detected",
+                        status_code=exc.response.status_code,
+                        query=query,
+                    )
+                    # Enviar alerta a Slack
+                    await self._alert_google_block(exc.response.status_code)
+                    break  # No continuar si está bloqueado
+                logger.debug("General web search query failed", query=query, error=str(exc)[:100])
+                continue
             except httpx.HTTPError as exc:
                 logger.debug("General web search query failed", query=query, error=str(exc)[:100])
                 continue

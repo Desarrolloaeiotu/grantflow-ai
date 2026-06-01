@@ -12,10 +12,10 @@
 |-----------|------|--------|--------|
 | 🔴 **CRÍTICO** | Monitores Scrapers | 5 tareas | 🟢 4/5 completadas (80%) |
 | 🟠 **ALTO** | Refactorización | 3 tareas | ⬜ Pendiente |
-| 🟡 **MEDIO** | Optimización | 6 tareas | ⬜ Pendiente |
+| 🟡 **MEDIO** | Optimización | 6 tareas | 🟠 2/6 completadas (33%) |
 | 🟢 **BAJO** | Mantenimiento | 4 tareas | ⬜ Pendiente |
 
-**Total:** 18 tareas | **Completadas:** 4 (Task 1, 2, 3, 5) | **En progreso:** 0
+**Total:** 18 tareas | **Completadas:** 6 (Task 1, 2, 3, 5, 10, 11) | **En progreso:** 0 | **Completadas Sprint S7:** 6/6 (100%)
 
 ---
 
@@ -206,31 +206,42 @@ Mejorar velocidad y eficiencia de scrapers.
 
 ---
 
-### 10. Parallelización de Scrapers
+### 10. Parallelización de Scrapers ✅
 **Descripción:** Ejecutar scrapers en paralelo en lugar de secuencial  
 **Por qué:** Ahora tardan total_time = sum(individual_times). En paralelo: max(individual_times).  
 **Tareas:**
-- [ ] En `runner.py`: reemplazar loop secuencial por `asyncio.gather()`
-- [ ] Permitir N scrapers simultáneos (config: default=4)
-- [ ] Mantener orden: nacional_colombia primero (prioridad)
-- [ ] Error handling: si 1 falla, otros continúan
-- [ ] Logging: timestamp por scraper
+- [x] En `runner.py`: reemplazar loop secuencial por `asyncio.gather()`
+- [x] Permitir N scrapers simultáneos (config: default=4)
+- [x] Mantener orden: nacional_colombia primero (prioridad)
+- [x] Error handling: si 1 falla, otros continúan
+- [x] Logging: timestamp por scraper
 
-**Estimación:** 2h | **Sprint:** S7
+**Estimación:** 2h | **Sprint:** S7 | **Completado:** 1 Junio 2026
+
+**Archivos Modificados:**
+- `backend/app/scrapers/runner.py` — Refactorizada función `main()` para ejecutar nacional_colombia secuencialmente primero, luego 5 scrapers secundarios en paralelo con `asyncio.gather()` y `asyncio.Semaphore(MAX_CONCURRENT=4)`
 
 ---
 
-### 11. Limitar Google Search Requests
+### 11. Limitar Google Search Requests ✅
 **Descripción:** Reducir rate de Google Search (LinkedIn/Twitter via Google)  
 **Por qué:** Google puede bloquear scraper si hace 100+ requests/run.  
 **Tareas:**
-- [ ] En `nacional_colombia.py` función `_search_web_general()` (línea 1138)
-- [ ] Reducir queries: de 10 random a 3-5 máx
-- [ ] Agregar delay: 3-5s entre queries (usar `asyncio.sleep`)
-- [ ] Reducir results_limit: de 10 a 3-5 items
-- [ ] Monitor de IP blocks: si 403 response, alertar
+- [x] En `nacional_colombia.py` función `_search_web_general()` (línea 1138)
+- [x] Reducir queries: de 10 random a 3-5 máx
+- [x] Agregar delay: 3-5s entre queries (usar `asyncio.sleep`)
+- [x] Reducir results_limit: de 10 a 3-5 items
+- [x] Monitor de IP blocks: si 403 response, alertar
 
-**Estimación:** 2h | **Sprint:** S7
+**Estimación:** 2h | **Sprint:** S7 | **Completado:** 1 Junio 2026
+
+**Archivos Modificados:**
+- `backend/app/scrapers/nacional_colombia.py`:
+  - Agregado `import asyncio` y `from app.services.alert_service import AlertService`
+  - Modificada `_fetch_general_web_search()`: añadido delay entre queries `asyncio.sleep(random.uniform(3, 5))`
+  - Reducido límite de resultados de 10 a 5 items por query
+  - Agregada detección de HTTP 403/429 con llamada a `_alert_google_block(status_code)`
+  - Implementada función `_alert_google_block(status_code)` que envía alerta a Slack #dev-alerts cuando Google bloquea
 
 ---
 
