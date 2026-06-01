@@ -365,7 +365,8 @@ class NacionalColombiaScraper(BaseScraper):
 
         # Intentar SECOP 2.0 primero, luego SECOP 1.0 como fallback
         api_endpoints = [
-            "https://www.secop.gov.co/api/v2/procesos",  # SECOP 2.0 (nueva plataforma)
+            "https://www.secop2.gov.co/api/procesos",  # SECOP 2.0 (nueva plataforma)
+            "https://www.secop.gov.co/api/v2/procesos",  # SECOP 2.0 alternativa
             "https://www.contratos.gov.co/api/v1/search"  # SECOP 1.0 (actual)
         ]
 
@@ -376,20 +377,24 @@ class NacionalColombiaScraper(BaseScraper):
 
             for term in search_terms[:3]:  # Probar con 3 términos primero
                 try:
-                    params = {
-                        "q": term,
-                        "filter": "status:publicada" if "v1" in api_base else "estado:publicada",
-                        "size": 50,
-                        "desde": 0,
-                    }
+                    # Parámetros según endpoint
+                    if "secop2" in api_base:
+                        params = {"busqueda": term, "limit": 50}
+                    else:
+                        params = {
+                            "q": term,
+                            "filter": "status:publicada" if "v1" in api_base else "estado:publicada",
+                            "size": 50,
+                            "desde": 0,
+                        }
 
                     resp = await client.get(api_base, params=params, timeout=15)
 
                     if resp.status_code == 200:
                         try:
                             data = resp.json()
-                            # Estructura es diferente en v1 vs v2
-                            results = data.get("data", data.get("procesos", []))
+                            # Estructura es diferente según versión
+                            results = data.get("data", data.get("procesos", data.get("resultado", [])))
 
                             if results:
                                 successful_endpoint = api_base
@@ -413,12 +418,16 @@ class NacionalColombiaScraper(BaseScraper):
         # Buscar con todos los términos usando el endpoint exitoso
         for term in search_terms:
             try:
-                params = {
-                    "q": term,
-                    "filter": "status:publicada" if "v1" in successful_endpoint else "estado:publicada",
-                    "size": 50,
-                    "desde": 0,
-                }
+                # Parámetros según endpoint
+                if "secop2" in successful_endpoint:
+                    params = {"busqueda": term, "limit": 50}
+                else:
+                    params = {
+                        "q": term,
+                        "filter": "status:publicada" if "v1" in successful_endpoint else "estado:publicada",
+                        "size": 50,
+                        "desde": 0,
+                    }
 
                 resp = await client.get(successful_endpoint, params=params, timeout=15)
                 resp.raise_for_status()
@@ -426,7 +435,25 @@ class NacionalColombiaScraper(BaseScraper):
                 try:
                     data = resp.json()
                     # Parsear según versión
-                    if "v2" in successful_endpoint:
+                    if "secop2" in successful_endpoint:
+                        results = data.get("resultado", data.get("procesos", []))
+                        for result in results[:15]:
+                            title = result.get("nombreProceso", result.get("nombre", "")).strip()
+                            if not title or len(title) < 10:
+                                continue
+
+                            process_id = result.get("idProceso", result.get("id", ""))
+                            url = f"https://www.secop2.gov.co/detalles/{process_id}" if process_id else ""
+
+                            items.append({
+                                "title": title,
+                                "url": url,
+                                "source": "secop",
+                                "funder": "Entidad pública colombiana (SECOP 2.0)",
+                                "search_term": term,
+                                "deadline_text": result.get("fechaCierre", result.get("deadline", "")),
+                            })
+                    elif "v2" in successful_endpoint:
                         results = data.get("procesos", [])
                         for result in results[:15]:
                             title = result.get("nombreProceso", "").strip()
@@ -544,12 +571,12 @@ class NacionalColombiaScraper(BaseScraper):
         """
         items = []
 
+        # URLs genéricas que son más robustas
         urls = [
-            "https://www.sena.edu.co/es-co/formaci%C3%B3n",
-            "https://www.sena.edu.co/es-co/aspirantes/oferta-educativa",
-            "https://www.sena.edu.co/es-co/beneficiarios/estudiantes/becas",
-            "https://www.sena.edu.co/es-co/empresas/servicios-empresariales",
-            "https://www.sena.edu.co/es-co/empresas/capacitacion-empresarial",
+            "https://www.sena.edu.co/es-co/inicio",
+            "https://www.sena.edu.co/es-co/",
+            "https://www.sena.edu.co/es-co/aspirantes",
+            "https://www.sena.edu.co/es-co/empresas",
         ]
 
         search_terms = [
@@ -558,8 +585,8 @@ class NacionalColombiaScraper(BaseScraper):
             "formación docente",
             "cuidadores",
             "jardines infantiles",
-            "diplomado educación",
-            "técnico educación",
+            "diplomado",
+            "beca",
         ]
 
         for url in urls:
@@ -568,20 +595,22 @@ class NacionalColombiaScraper(BaseScraper):
                 resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, "lxml")
 
-                # Buscar enlaces de programas y oportunidades
-                links = soup.select(
-                    "a[href*='programa'], a[href*='oferta'], "
-                    "a[href*='diplomado'], a[href*='beca'], "
-                    "a[href*='formacion'], a[href*='curso'], "
-                    ".programa a, .oferta a, .card a, .item a"
-                )
+                # Buscar enlaces de programas y oportunidades con keywords relevantes
+                all_links = soup.find_all("a", href=True)
 
                 page_items = 0
-                for link in links[:20]:
+                for link in all_links[:50]:
                     href = link.get("href", "").strip()
                     title = link.get_text(strip=True)
 
                     if not href or not title or not (10 <= len(title) <= 300):
+                        continue
+
+                    # Filtrar por keywords relevantes
+                    title_lower = title.lower()
+                    has_keyword = any(term.lower() in title_lower for term in search_terms)
+
+                    if not has_keyword:
                         continue
 
                     # Normalizar URL
@@ -603,36 +632,6 @@ class NacionalColombiaScraper(BaseScraper):
             except httpx.HTTPError as exc:
                 logger.debug("SENA fetch failed", url=url, error=str(exc)[:100])
                 continue
-
-        # Búsqueda directa en plataforma de SENA por palabras clave
-        try:
-            search_base = "https://www.sena.edu.co/es-co/aspirantes/buscar-programas"
-            for term in search_terms:
-                params = {"keyword": term}
-                resp = await client.get(search_base, params=params, timeout=15)
-                if resp.status_code == 200:
-                    soup = BeautifulSoup(resp.text, "lxml")
-                    results = soup.select("a[href*='programa'], .result a, .search-result a")
-
-                    for result in results[:10]:
-                        href = result.get("href", "").strip()
-                        title = result.get_text(strip=True)
-
-                        if href and title and 10 <= len(title) <= 300:
-                            if not href.startswith("http"):
-                                href = "https://www.sena.edu.co" + href if href.startswith("/") else "https://www.sena.edu.co/" + href
-
-                            items.append({
-                                "title": title,
-                                "url": href,
-                                "source": "sena",
-                                "funder": "SENA",
-                                "search_term": term,
-                            })
-
-                    logger.debug("SENA search completed", term=term, results=len(results))
-        except httpx.HTTPError as exc:
-            logger.debug("SENA search failed", error=str(exc)[:100])
 
         if items:
             logger.info("SENA opportunities scraped", results=len(items))
