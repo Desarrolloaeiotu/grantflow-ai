@@ -39,7 +39,40 @@ logger = structlog.get_logger()
 
 # Palabras clave CORE para Nacional Colombia
 # Dividida en CORE (muy relevante) y SECONDARY (moderadamente relevante)
+# REFOZADAS para detectar las 4 oportunidades estratégicas O1-O4
+
 NACIONAL_KEYWORDS_CORE = (
+    # ── OPORTUNIDAD 1: Fortalecimiento de CDI en contextos de vulnerabilidad ────────────────
+    # Gobierno, MinEducación, ICBF. Monto: COP $280-450M
+    "cdi vulnerabilidad", "centros infantiles públicos", "cdi post-conflicto",
+    "cdi zonas rurales", "cdi desplazamiento", "municipios vulnerables cdi",
+    "formación docente contextos vulnerables", "acompañamiento pedagógico cdi",
+    "transformación calidad cdi", "inclusión social cdi", "cdi contextos vulnerables",
+
+    # ── OPORTUNIDAD 2: Programa de formación docente en primera infancia (Cajas) ─────────────
+    # Cajas de Compensación, CAFAM, Caja Nariño, Caja Popular, etc. Monto: COP $180-320M
+    "formación docente cafam", "diplomado primera infancia", "capacitación cuidadores",
+    "modalidad familiar capacitación", "licenciamiento educación inicial",
+    "acompañamiento pedagógico cajas", "formación cuidadores informales",
+    "cajas compensación formación docente", "programas educación cajas",
+
+    # ── OPORTUNIDAD 3: Acompañamiento pedagógico a jardines privados y rurales ──────────────
+    # Sector educación privada. Monto: COP $120-200M
+    "jardines privados educación inicial", "acompañamiento pedagógico jardines",
+    "calidad educativa jardines", "transformación ambiental jardines",
+    "medición desarrollo infantil jardines", "entornos aprendizaje jardines",
+    "formación docente jardines privados", "jardines privados rurales",
+    "acompañamiento jardines", "jardines educación inicial",
+
+    # ── OPORTUNIDAD 4: Incidencia en política pública de primera infancia ──────────────────
+    # Gobierno, ICBF, MinEducación, DNP, Cooperación Internacional. Monto: COP $200-350M
+    "estándares calidad primera infancia", "política pública educación inicial",
+    "lineamientos icbf", "marcos de calidad cdi", "guías primer año escuela",
+    "tránsito armónico educación", "política nacional primera infancia",
+    "estándares de calidad infantil", "política pública cdi", "incidencia política educación",
+    "cero a siempre política", "sistema nacional atención primera infancia",
+
+    # ── Palabras clave genéricas de ECD (existentes, mantener) ──────────────────────────────
     # 1. Early childhood development, education, school readiness
     "early childhood development", "early childhood education", "educación inicial", "primera infancia", "school readiness",
     "desarrollo infantil temprano", "educación preescolar", "preparación escolar", "listo para la escuela", "preescolar",
@@ -153,7 +186,11 @@ class NacionalColombiaScraper(BaseScraper):
             secop_items = await self._fetch_secop(client)
             all_items.extend(secop_items)
 
-            # Fuente 4: Búsqueda genérica de Cajas de Compensación
+            # Fuente 4: SENA (Servicio Nacional de Aprendizaje) — Formación docente y becas
+            sena_items = await self._fetch_sena(client)
+            all_items.extend(sena_items)
+
+            # Fuente 5: Búsqueda genérica de Cajas de Compensación
             cajas_items = await self._fetch_cajas(client)
             all_items.extend(cajas_items)
 
@@ -189,6 +226,7 @@ class NacionalColombiaScraper(BaseScraper):
             icbf=len(icbf_items) if icbf_items else 0,
             mineducacion=len(min_items) if min_items else 0,
             secop=len(secop_items) if secop_items else 0,
+            sena=len(sena_items) if sena_items else 0,
             cajas=len(cajas_items) if cajas_items else 0,
             rss=len(rss_items) if rss_items else 0,
             universities=len(uni_items) if uni_items else 0,
@@ -303,7 +341,7 @@ class NacionalColombiaScraper(BaseScraper):
 
         SECOP es la fuente oficial de contratos públicos en Colombia.
         Busca procesos abiertos de contratación en educación inicial.
-        Utiliza la API oficial de SECOP para máxima confiabilidad.
+        Intenta primero SECOP 2.0 (nueva plataforma), luego SECOP 1.0 como fallback.
         """
         items = []
 
@@ -325,58 +363,112 @@ class NacionalColombiaScraper(BaseScraper):
             "tecnología educativa"
         ]
 
-        # Usar API oficial de SECOP (versión 1.0)
-        api_base = "https://www.contratos.gov.co/api/v1/search"
+        # Intentar SECOP 2.0 primero, luego SECOP 1.0 como fallback
+        api_endpoints = [
+            "https://www.secop.gov.co/api/v2/procesos",  # SECOP 2.0 (nueva plataforma)
+            "https://www.contratos.gov.co/api/v1/search"  # SECOP 1.0 (actual)
+        ]
 
+        # Intentar cada endpoint en orden
+        successful_endpoint = None
+        for api_base in api_endpoints:
+            endpoint_version = "2.0" if "v2" in api_base else "1.0"
+
+            for term in search_terms[:3]:  # Probar con 3 términos primero
+                try:
+                    params = {
+                        "q": term,
+                        "filter": "status:publicada" if "v1" in api_base else "estado:publicada",
+                        "size": 50,
+                        "desde": 0,
+                    }
+
+                    resp = await client.get(api_base, params=params, timeout=15)
+
+                    if resp.status_code == 200:
+                        try:
+                            data = resp.json()
+                            # Estructura es diferente en v1 vs v2
+                            results = data.get("data", data.get("procesos", []))
+
+                            if results:
+                                successful_endpoint = api_base
+                                logger.info("SECOP API working", version=endpoint_version, url=api_base)
+                                break
+                        except (json.JSONDecodeError, KeyError):
+                            pass
+                except httpx.HTTPError:
+                    pass
+
+            if successful_endpoint:
+                break
+
+        # Si no hay endpoint exitoso, usar fallback
+        if not successful_endpoint:
+            logger.debug("SECOP API not available, using HTML fallback")
+            for term in search_terms[:5]:
+                items.extend(await self._fetch_secop_web_fallback(client, term))
+            return items
+
+        # Buscar con todos los términos usando el endpoint exitoso
         for term in search_terms:
-            params = {
-                "q": term,
-                "filter": "status:publicada",
-                "size": 50,
-                "desde": 0,
-            }
-
             try:
-                resp = await client.get(api_base, params=params, timeout=15)
-                if resp.status_code == 404:
-                    logger.debug("SECOP API endpoint not available, trying fallback HTML scraping")
-                    # Fallback a búsqueda web directa
-                    items.extend(await self._fetch_secop_web_fallback(client, term))
-                    continue
+                params = {
+                    "q": term,
+                    "filter": "status:publicada" if "v1" in successful_endpoint else "estado:publicada",
+                    "size": 50,
+                    "desde": 0,
+                }
 
+                resp = await client.get(successful_endpoint, params=params, timeout=15)
                 resp.raise_for_status()
 
                 try:
                     data = resp.json()
-                    results = data.get("data", [])
+                    # Parsear según versión
+                    if "v2" in successful_endpoint:
+                        results = data.get("procesos", [])
+                        for result in results[:15]:
+                            title = result.get("nombreProceso", "").strip()
+                            if not title or len(title) < 10:
+                                continue
 
-                    for result in results[:20]:
-                        title = result.get("procesosContratacion", [{}])[0].get("nombreProceso", "").strip()
-                        if not title or len(title) < 10:
-                            continue
+                            process_id = result.get("idProceso", "")
+                            url = f"https://www.secop.gov.co/portal/componentes/detalles/{process_id}" if process_id else ""
 
-                        # URL de visualización del proceso
-                        process_id = result.get("procesosContratacion", [{}])[0].get("id", "")
-                        url = f"https://www.contratos.gov.co/consultar/detalle/{process_id}" if process_id else ""
+                            items.append({
+                                "title": title,
+                                "url": url,
+                                "source": "secop",
+                                "funder": "Entidad pública colombiana (SECOP 2.0)",
+                                "search_term": term,
+                                "deadline_text": result.get("fechaCierre", ""),
+                            })
+                    else:
+                        # SECOP 1.0
+                        results = data.get("data", [])
+                        for result in results[:15]:
+                            title = result.get("procesosContratacion", [{}])[0].get("nombreProceso", "").strip()
+                            if not title or len(title) < 10:
+                                continue
 
-                        if not url:
-                            continue
+                            process_id = result.get("procesosContratacion", [{}])[0].get("id", "")
+                            url = f"https://www.contratos.gov.co/consultar/detalle/{process_id}" if process_id else ""
 
-                        items.append({
-                            "title": title,
-                            "url": url,
-                            "source": "secop",
-                            "funder": "Entidad pública colombiana (SECOP)",
-                            "search_term": term,
-                            "deadline_text": result.get("fechaCierre", ""),
-                        })
+                            items.append({
+                                "title": title,
+                                "url": url,
+                                "source": "secop",
+                                "funder": "Entidad pública colombiana (SECOP 1.0)",
+                                "search_term": term,
+                                "deadline_text": result.get("fechaCierre", ""),
+                            })
 
                     if len(items) > 0:
                         logger.info("SECOP API search completed", term=term, results=len(items))
 
                 except (json.JSONDecodeError, KeyError) as e:
                     logger.debug("SECOP API response parse error", term=term, error=str(e)[:100])
-                    # Fallback a búsqueda HTML si JSON falla
                     items.extend(await self._fetch_secop_web_fallback(client, term))
 
             except httpx.HTTPError as exc:
@@ -438,6 +530,114 @@ class NacionalColombiaScraper(BaseScraper):
 
         return items
 
+    async def _fetch_sena(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
+        """Busca programas de formación docente, becas y diplomados en SENA.
+
+        SENA (Servicio Nacional de Aprendizaje) es la principal institución para
+        formación técnica en Colombia. Ofrece:
+        - Diplomados en educación inicial
+        - Becas para formación docente
+        - Programas de cuidado infantil
+        - Programas de cuidadores informales
+
+        Relevante para O1 (CDI públicos), O2 (formación docente) y O3 (jardines privados).
+        """
+        items = []
+
+        urls = [
+            "https://www.sena.edu.co/es-co/formaci%C3%B3n",
+            "https://www.sena.edu.co/es-co/aspirantes/oferta-educativa",
+            "https://www.sena.edu.co/es-co/beneficiarios/estudiantes/becas",
+            "https://www.sena.edu.co/es-co/empresas/servicios-empresariales",
+            "https://www.sena.edu.co/es-co/empresas/capacitacion-empresarial",
+        ]
+
+        search_terms = [
+            "educación inicial",
+            "primera infancia",
+            "formación docente",
+            "cuidadores",
+            "jardines infantiles",
+            "diplomado educación",
+            "técnico educación",
+        ]
+
+        for url in urls:
+            try:
+                resp = await client.get(url, timeout=15)
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.text, "lxml")
+
+                # Buscar enlaces de programas y oportunidades
+                links = soup.select(
+                    "a[href*='programa'], a[href*='oferta'], "
+                    "a[href*='diplomado'], a[href*='beca'], "
+                    "a[href*='formacion'], a[href*='curso'], "
+                    ".programa a, .oferta a, .card a, .item a"
+                )
+
+                page_items = 0
+                for link in links[:20]:
+                    href = link.get("href", "").strip()
+                    title = link.get_text(strip=True)
+
+                    if not href or not title or not (10 <= len(title) <= 300):
+                        continue
+
+                    # Normalizar URL
+                    if not href.startswith("http"):
+                        href = "https://www.sena.edu.co" + href if href.startswith("/") else "https://www.sena.edu.co/" + href
+
+                    items.append({
+                        "title": title,
+                        "url": href,
+                        "source": "sena",
+                        "funder": "Servicio Nacional de Aprendizaje (SENA)",
+                        "organization": "SENA",
+                    })
+                    page_items += 1
+
+                if page_items > 0:
+                    logger.info("SENA page parsed", url=url, links=page_items, total=len(items))
+
+            except httpx.HTTPError as exc:
+                logger.debug("SENA fetch failed", url=url, error=str(exc)[:100])
+                continue
+
+        # Búsqueda directa en plataforma de SENA por palabras clave
+        try:
+            search_base = "https://www.sena.edu.co/es-co/aspirantes/buscar-programas"
+            for term in search_terms:
+                params = {"keyword": term}
+                resp = await client.get(search_base, params=params, timeout=15)
+                if resp.status_code == 200:
+                    soup = BeautifulSoup(resp.text, "lxml")
+                    results = soup.select("a[href*='programa'], .result a, .search-result a")
+
+                    for result in results[:10]:
+                        href = result.get("href", "").strip()
+                        title = result.get_text(strip=True)
+
+                        if href and title and 10 <= len(title) <= 300:
+                            if not href.startswith("http"):
+                                href = "https://www.sena.edu.co" + href if href.startswith("/") else "https://www.sena.edu.co/" + href
+
+                            items.append({
+                                "title": title,
+                                "url": href,
+                                "source": "sena",
+                                "funder": "SENA",
+                                "search_term": term,
+                            })
+
+                    logger.debug("SENA search completed", term=term, results=len(results))
+        except httpx.HTTPError as exc:
+            logger.debug("SENA search failed", error=str(exc)[:100])
+
+        if items:
+            logger.info("SENA opportunities scraped", results=len(items))
+        return items
+
     async def _fetch_cajas(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
         """Busca oportunidades y programas de Cajas de Compensación.
 
@@ -450,26 +650,50 @@ class NacionalColombiaScraper(BaseScraper):
             {
                 "name": "CAFAM",
                 "url": "https://www.cafam.com.co",
-                "paths": ["/servicios/educacion", "/programas/educacion", "/oportunidades", "/servicios"],
-                "keywords": ["educacion", "infantil", "jardin", "formacion"],
+                "paths": ["/servicios/educacion", "/programas/educacion", "/oportunidades", "/servicios", "/afiliadosycotizantes"],
+                "keywords": ["educacion", "infantil", "jardin", "formacion", "becas"],
+            },
+            {
+                "name": "Compensar",
+                "url": "https://www.compensar.com.co",
+                "paths": ["/servicios", "/programas", "/educacion", "/sobre-compensar/oportunidades"],
+                "keywords": ["educacion", "infantil", "jardin", "formacion", "afiliados"],
+            },
+            {
+                "name": "Protección",
+                "url": "https://www.proteccion.com.co",
+                "paths": ["/servicios", "/programas", "/educacion", "/bienestar"],
+                "keywords": ["educacion", "infantil", "formacion", "beneficiarios"],
             },
             {
                 "name": "Caja Nariño",
                 "url": "https://www.cajanario.com.co",
-                "paths": ["/servicios", "/programas", "/oportunidades"],
-                "keywords": ["educacion", "infantil", "jardin"],
+                "paths": ["/servicios", "/programas", "/oportunidades", "/educacion"],
+                "keywords": ["educacion", "infantil", "jardin", "formacion"],
             },
             {
                 "name": "Caja Popular",
                 "url": "https://www.cajapopular.com.co",
-                "paths": ["/servicios", "/programas", "/educacion"],
-                "keywords": ["educacion", "infantil"],
+                "paths": ["/servicios", "/programas", "/educacion", "/bienestar"],
+                "keywords": ["educacion", "infantil", "formacion"],
+            },
+            {
+                "name": "COMFANDI",
+                "url": "https://www.comfandi.com.co",
+                "paths": ["/servicios", "/programas", "/educacion", "/bienestar-del-afiliado"],
+                "keywords": ["educacion", "infantil", "formacion", "afiliados"],
+            },
+            {
+                "name": "COMFAORIENTE",
+                "url": "https://www.comfaoriente.com.co",
+                "paths": ["/servicios", "/programas", "/bienestar", "/educacion"],
+                "keywords": ["educacion", "infantil", "formacion"],
             },
             {
                 "name": "Caja de Compensación Familiar Colombiana",
                 "url": "https://www.cafacol.com.co",
-                "paths": ["/servicios", "/programas"],
-                "keywords": ["educacion", "infantil"],
+                "paths": ["/servicios", "/programas", "/educacion"],
+                "keywords": ["educacion", "infantil", "formacion"],
             },
         ]
 
