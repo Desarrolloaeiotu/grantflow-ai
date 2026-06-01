@@ -1,0 +1,211 @@
+{
+  "name": "daily-monitor-html",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "everyHour",
+            "hour": 4,
+            "minute": 30
+          },
+          {
+            "mode": "everyHour",
+            "hour": 6,
+            "minute": 30
+          },
+          {
+            "mode": "everyHour",
+            "hour": 7,
+            "minute": 30
+          },
+          {
+            "mode": "everyHour",
+            "hour": 8,
+            "minute": 30
+          },
+          {
+            "mode": "everyHour",
+            "hour": 9,
+            "minute": 30
+          }
+        ]
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        50,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/monitor/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer gf_live_..."
+            }
+          ]
+        },
+        "responseFormat": "json"
+      },
+      "id": "http-request-monitor",
+      "name": "HTTP Request: Run Monitor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        250,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "{{ $json.status }}",
+              "operation": "equals",
+              "value2": "critical"
+            }
+          ]
+        }
+      },
+      "id": "if-critical",
+      "name": "If Critical?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        450,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": {
+          "text": "🚨 CRITICAL: GrantFlow HTML Monitor detected failures",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "Detailed alerts already sent to @admin-alianzas"
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Failed Sources:*\n{{ $json.failed_sources.join('\\n') }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Alerts Sent:*\n{{ $json.alerts_sent }}"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "id": "slack-notification",
+      "name": "Slack: Notify Admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        650,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": {
+          "text": "✅ All HTML monitors passed",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "All {{ $json.total_checked }} monitors checked successfully at {{ $json.run_at }}"
+              }
+            }
+          ]
+        }
+      },
+      "id": "slack-success",
+      "name": "Slack: All OK",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        650,
+        350
+      ]
+    }
+  ],
+  "connections": {
+    "schedule-trigger": {
+      "main": [
+        [
+          {
+            "node": "http-request-monitor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "http-request-monitor": {
+      "main": [
+        [
+          {
+            "node": "if-critical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-critical": {
+      "main": [
+        [
+          {
+            "node": "slack-notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "slack-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "errorWorkflow": ""
+  },
+  "trigger": "schedule-trigger",
+  "staticData": null,
+  "pinData": null
+}

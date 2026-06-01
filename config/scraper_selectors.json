@@ -1,0 +1,62 @@
+{
+  "bid": {
+    "source_name": "bid",
+    "url": "https://bidlab.org/es/convocatorias",
+    "funder_hint": "BID",
+    "timeout_sec": 15,
+    "selectors": {
+      "card": "article, .views-row, .card, li",
+      "title": "h1, h2, h3, h4",
+      "link": "a[href]",
+      "description": "p, .description, .snippet"
+    },
+    "expected_min": {
+      "card": 3,
+      "title": 3,
+      "link": 3,
+      "description": 1
+    },
+    "last_checked": null,
+    "status": "unknown"
+  },
+  "unwomen": {
+    "source_name": "unwomen",
+    "url": "https://www.unwomen.org/en/get-involved/grants",
+    "funder_hint": "UN Women",
+    "timeout_sec": 15,
+    "selectors": {
+      "card": "article, .views-row, .news-item, .card, li",
+      "title": "h1, h2, h3, h4",
+      "link": "a[href]",
+      "description": "p, .excerpt, .summary"
+    },
+    "expected_min": {
+      "card": 3,
+      "title": 3,
+      "link": 3,
+      "description": 1
+    },
+    "last_checked": null,
+    "status": "unknown"
+  },
+  "developmentaid": {
+    "source_name": "developmentaid",
+    "url": "https://www.developmentaid.org/news-stream/grants",
+    "funder_hint": "Development Aid",
+    "timeout_sec": 15,
+    "selectors": {
+      "card": "article, .card, .news-item, .news-card, .item",
+      "title": "h1, h2, h3, h4",
+      "link": "a[href]",
+      "description": "p, .snippet, .excerpt"
+    },
+    "expected_min": {
+      "card": 3,
+      "title": 3,
+      "link": 3,
+      "description": 1
+    },
+    "last_checked": null,
+    "status": "unknown"
+  }
+}
