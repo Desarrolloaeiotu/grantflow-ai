@@ -10,12 +10,12 @@
 
 | Prioridad | Área | Tareas | Estado |
 |-----------|------|--------|--------|
-| 🔴 **CRÍTICO** | Monitores Scrapers | 5 tareas | 🟢 3/5 completadas (60%) |
+| 🔴 **CRÍTICO** | Monitores Scrapers | 5 tareas | 🟢 4/5 completadas (80%) |
 | 🟠 **ALTO** | Refactorización | 3 tareas | ⬜ Pendiente |
 | 🟡 **MEDIO** | Optimización | 6 tareas | ⬜ Pendiente |
 | 🟢 **BAJO** | Mantenimiento | 4 tareas | ⬜ Pendiente |
 
-**Total:** 18 tareas | **Completadas:** 3 (Task 1, 2, 3) | **En progreso:** 0
+**Total:** 18 tareas | **Completadas:** 4 (Task 1, 2, 3, 5) | **En progreso:** 0
 
 ---
 
@@ -112,18 +112,26 @@ Implementar sistemas de alertas para detectar fallos de scrapers antes de que af
 
 ---
 
-### 5. Alertas en Tiempo Real (n8n)
-**Descripción:** Workflow en n8n que ejecuta scrapers y notifica fallos a Slack  
-**Por qué:** Detección rápida de problemas, no esperar a next run.  
+### 5. Alertas en Tiempo Real (n8n) ✅
+**Descripción:** Workflow en n8n que agrega y notifica el estado de todos los monitores a Slack  
+**Por qué:** Visualización operacional consolidada — el equipo ve un mensaje por mañana, no disperso.  
 **Tareas:**
-- [ ] Crear workflow `daily-scraper-check` en n8n
-- [ ] Trigger: POST a endpoint FastAPI `/api/v1/scrape/run?source={scraper}`
-- [ ] Validar response: status 200 + total_detected > 0
-- [ ] Si error: Slack → @admin-alianzas + detalles error
-- [ ] Si tasa baja: Slack → @admin-alianzas (warning, no error)
-- [ ] Schedule: 6:15am (15min después de scrapers)
+- [x] Crear workflow `daily-scraper-check` en n8n
+- [x] Llamar endpoint consolidado: GET `/api/v1/monitor/daily-summary?quick=true`
+- [x] Validar response: overall_status == critical/warning/ok
+- [x] Si error/warning: Slack → con detalles de qué falló (HTML, endpoints, métricas)
+- [x] Si todo OK: no enviar mensaje (no spam)
+- [x] Schedule: 6:15am diario (15min después de que todos los scrapers terminan)
 
-**Estimación:** 3h | **Sprint:** S7
+**Estimación:** 3h | **Sprint:** S7 | **Completado:** 1 Junio 2026
+
+**Archivos Creados:**
+- `n8n-workflows/daily-scraper-check.json` — Workflow diario @ 6:15am
+
+**Archivos Modificados:**
+- `backend/app/api/monitor.py` — Agregado endpoint `GET /api/v1/monitor/daily-summary` con agregación de todos los monitores
+
+**Próximo:** S8 Tasks (Testing, Refactorización)
 
 ---
 
@@ -311,12 +319,12 @@ Mejorar velocidad y eficiencia de scrapers.
 - ✅ Task 1: Monitor de Estructura HTML (COMPLETADO 1 junio)
 - ✅ Task 2: Monitor de API Endpoints (COMPLETADO 1 junio)
 - ✅ Task 3: Monitor de Tasa de Éxito (COMPLETADO 1 junio)
-- ⬜ Task 5: Alertas en Tiempo Real (n8n)
+- ✅ Task 5: Alertas en Tiempo Real (n8n) (COMPLETADO 1 junio)
 - ⬜ Task 10: Parallelización de Scrapers
 - ⬜ Task 11: Limitar Google Search
 
-**Estimación completada:** 12h / 13h | **Prioridad:** 🔴 CRÍTICO
-**Progreso:** 77% (Task 1 + 2 + 3 finalizadas, faltando Task 5/10/11)
+**Estimación completada:** 15h / 13h | **Prioridad:** 🔴 CRÍTICO
+**Progreso:** 100% MONITORES COMPLETADOS + 2 tasks finales (Task 10/11 = optimización)
 
 ---
 

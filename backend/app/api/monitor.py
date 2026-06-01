@@ -397,3 +397,177 @@ async def metrics_drop_alerts() -> dict[str, Any]:
             "error": str(exc),
             "alerts": [],
         }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# RESUMEN CONSOLIDADO DE MONITOREO (Task 5 - Daily Check)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/daily-summary")
+async def daily_summary(quick: bool = Query(False)) -> dict[str, Any]:
+    """Resumen consolidado de toda la infraestructura de monitoreo.
+
+    Agregación de:
+      - HTML structure monitors (bid, unwomen, developmentaid)
+      - API endpoint monitors (grantsgov, SECOP, RSS feeds)
+      - Scraper success rate monitors (drops detectados hoy)
+
+    Parámetro:
+      ?quick=true  # Solo consulta BD (sin re-validar endpoints en vivo)
+
+    Usado por: n8n daily-scraper-check workflow @ 6:15am
+
+    Retorna status consolidado: "critical" | "warning" | "ok"
+    """
+    log = logger.bind(action="daily_summary", quick=quick)
+    log.info("Daily summary requested")
+
+    checked_at = datetime.utcnow().isoformat() + "Z"
+    html_status = "ok"
+    html_failed = []
+    endpoint_status = "ok"
+    endpoint_failed = []
+    metrics_status = "ok"
+    metrics_drops = []
+
+    # 1. HTML Monitor Status (si quick=True, consultar BD; si False, ejecutar validación)
+    if quick:
+        try:
+            async with AsyncSessionLocal() as db:
+                from sqlalchemy import text
+                result = await db.execute(
+                    text("""
+                        SELECT source_name, status FROM scraper_monitor_log
+                        WHERE checked_at >= NOW() - INTERVAL '24 hours'
+                        AND (status = 'failed' OR status = 'degraded')
+                        ORDER BY checked_at DESC
+                    """)
+                )
+                for row in result:
+                    source_name, status = row
+                    if status == "failed":
+                        html_status = "critical"
+                        html_failed.append(source_name)
+                    elif status == "degraded" and html_status != "critical":
+                        html_status = "warning"
+        except Exception as exc:
+            log.warning("HTML monitor BD check failed", error=str(exc))
+    else:
+        # Ejecutar validación en vivo
+        html_results = await run_all_monitors()
+        for result in html_results:
+            if result["status"] == "failed":
+                html_status = "critical"
+                html_failed.append(result["source"])
+            elif result["status"] == "degraded" and html_status != "critical":
+                html_status = "warning"
+
+    # 2. Endpoint Monitor Status
+    if quick:
+        try:
+            async with AsyncSessionLocal() as db:
+                from sqlalchemy import text
+                result = await db.execute(
+                    text("""
+                        SELECT endpoint_name, status FROM endpoint_monitor_log
+                        WHERE checked_at >= NOW() - INTERVAL '24 hours'
+                        AND (status = 'failed' OR status = 'degraded')
+                        ORDER BY checked_at DESC
+                    """)
+                )
+                for row in result:
+                    endpoint_name, status = row
+                    if status == "failed":
+                        endpoint_status = "critical"
+                        endpoint_failed.append(endpoint_name)
+                    elif status == "degraded" and endpoint_status != "critical":
+                        endpoint_status = "warning"
+        except Exception as exc:
+            log.warning("Endpoint monitor BD check failed", error=str(exc))
+    else:
+        # Ejecutar validación en vivo
+        endpoint_results = await run_all_endpoint_monitors()
+        for result in endpoint_results:
+            if result["status"] == "failed":
+                endpoint_status = "critical"
+                endpoint_failed.append(result["endpoint_name"])
+            elif result["status"] == "degraded" and endpoint_status != "critical":
+                endpoint_status = "warning"
+
+    # 3. Scraper Metrics Status (siempre de BD)
+    try:
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import text
+            result = await db.execute(
+                text("""
+                    SELECT
+                      scraper_name,
+                      (SELECT total_normalized FROM scraper_metrics
+                       WHERE scraper_name = sm.scraper_name
+                       AND run_date = CURRENT_DATE
+                       ORDER BY created_at DESC LIMIT 1) as today_normalized,
+                      AVG(total_normalized) as avg_7d
+                    FROM scraper_metrics sm
+                    WHERE run_date >= CURRENT_DATE - INTERVAL '7 days'
+                    GROUP BY scraper_name
+                    HAVING (SELECT total_normalized FROM scraper_metrics
+                           WHERE scraper_name = sm.scraper_name
+                           AND run_date = CURRENT_DATE
+                           ORDER BY created_at DESC LIMIT 1) IS NOT NULL
+                """)
+            )
+            for row in result:
+                scraper_name, today, avg_7d = row
+                if today is None or avg_7d is None:
+                    continue
+                if today == 0 or today < avg_7d * 0.5:
+                    drop_percent = (1.0 - today / avg_7d) * 100 if avg_7d > 0 else 100.0
+                    severity = "critical" if today == 0 else "warning"
+                    if severity == "critical":
+                        metrics_status = "critical"
+                    elif severity == "warning" and metrics_status != "critical":
+                        metrics_status = "warning"
+                    metrics_drops.append({
+                        "scraper_name": scraper_name,
+                        "today": today,
+                        "avg_7d": int(avg_7d),
+                        "drop_percent": round(drop_percent, 1),
+                        "severity": severity,
+                    })
+    except Exception as exc:
+        log.warning("Metrics check failed", error=str(exc))
+
+    # 4. Consolidate overall status
+    overall_status = "ok"
+    if html_status == "critical" or endpoint_status == "critical" or metrics_status == "critical":
+        overall_status = "critical"
+    elif html_status == "warning" or endpoint_status == "warning" or metrics_status == "warning":
+        overall_status = "warning"
+
+    # 5. Build response
+    response = {
+        "checked_at": checked_at,
+        "overall_status": overall_status,
+        "html_monitors": {
+            "status": html_status,
+            "failed_sources": html_failed,
+        },
+        "endpoint_monitors": {
+            "status": endpoint_status,
+            "failed_endpoints": endpoint_failed,
+        },
+        "metrics": {
+            "status": metrics_status,
+            "drop_alerts": metrics_drops,
+        },
+    }
+
+    # Summary text for logging/debugging
+    issue_count = len(html_failed) + len(endpoint_failed) + len(metrics_drops)
+    response["summary_text"] = (
+        f"{issue_count} issue(s) detected" if issue_count > 0 else "All systems OK"
+    )
+
+    log.info("Daily summary completed", status=overall_status, issues=issue_count)
+    return response

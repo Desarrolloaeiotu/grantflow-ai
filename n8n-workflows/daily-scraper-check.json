@@ -1,0 +1,170 @@
+{
+  "name": "daily-scraper-check",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "everyHour",
+            "hour": 6,
+            "minute": 15
+          }
+        ]
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        50,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:8000/api/v1/monitor/daily-summary?quick=true",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer gf_live_..."
+            }
+          ]
+        },
+        "responseFormat": "json"
+      },
+      "id": "http-request-summary",
+      "name": "HTTP Request: Get Daily Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        250,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "{{ $json.overall_status }}",
+              "operation": "notEquals",
+              "value2": "ok"
+            }
+          ]
+        }
+      },
+      "id": "if-not-ok",
+      "name": "If Issues Detected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        450,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": {
+          "text": "{{ $json.overall_status === 'critical' ? '🚨 CRITICAL' : '⚠️ WARNING' }}: GrantFlow Morning Check",
+          "blocks": [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "{{ $json.overall_status === 'critical' ? '🚨 CRITICAL' : '⚠️ WARNING' }}: GrantFlow Morning Check — {{ $json.summary_text }}"
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Status:*\n{{ $json.overall_status | uppercase }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Checked:*\n{{ $json.checked_at }}"
+                }
+              ]
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "{{ $json.html_monitors.failed_sources.length > 0 ? '❌ *HTML Monitors:* ' + $json.html_monitors.failed_sources.join(', ') + '\\n' : '' }}{{ $json.endpoint_monitors.failed_endpoints.length > 0 ? '❌ *API Endpoints:* ' + $json.endpoint_monitors.failed_endpoints.join(', ') + '\\n' : '' }}{{ $json.metrics.drop_alerts.length > 0 ? '❌ *Success Rate Drops:* ' + $json.metrics.drop_alerts.map(a => a.scraper_name + ' (' + a.drop_percent + '%)').join(', ') : '' }}"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "→ Review: [Dashboard Metabase](http://metabase.localhost:3000) | [GrantFlow Logs](http://localhost:8000/health)"
+              }
+            }
+          ]
+        }
+      },
+      "id": "slack-alert",
+      "name": "Slack: Post Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        650,
+        150
+      ]
+    }
+  ],
+  "connections": {
+    "schedule-trigger": {
+      "main": [
+        [
+          {
+            "node": "http-request-summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "http-request-summary": {
+      "main": [
+        [
+          {
+            "node": "if-not-ok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-not-ok": {
+      "main": [
+        [
+          {
+            "node": "slack-alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "errorWorkflow": ""
+  },
+  "trigger": "schedule-trigger",
+  "staticData": null,
+  "pinData": null
+}
