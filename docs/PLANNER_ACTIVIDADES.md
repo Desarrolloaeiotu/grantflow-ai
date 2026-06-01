@@ -10,12 +10,12 @@
 
 | Prioridad | Área | Tareas | Estado |
 |-----------|------|--------|--------|
-| 🔴 **CRÍTICO** | Monitores Scrapers | 5 tareas | 🟢 4/5 completadas (80%) |
+| 🔴 **CRÍTICO** | Monitores Scrapers | 5 tareas | 🟢 **5/5 completadas (100%)** |
 | 🟠 **ALTO** | Refactorización | 3 tareas | ⬜ Pendiente |
 | 🟡 **MEDIO** | Optimización | 6 tareas | 🟠 2/6 completadas (33%) |
 | 🟢 **BAJO** | Mantenimiento | 4 tareas | ⬜ Pendiente |
 
-**Total:** 18 tareas | **Completadas:** 6 (Task 1, 2, 3, 5, 10, 11) | **En progreso:** 0 | **Completadas Sprint S7:** 6/6 (100%)
+**Total:** 18 tareas | **Completadas:** 7 (Task 1, 2, 3, 4, 5, 10, 11) | **En progreso:** 0 | **Sprint S7-S8 CRÍTICO:** 7/7 (100%)
 
 ---
 
@@ -96,19 +96,28 @@ Implementar sistemas de alertas para detectar fallos de scrapers antes de que af
 
 ---
 
-### 4. Testing Automático de Scrapers
+### 4. Testing Automático de Scrapers ✅
 **Descripción:** Suite de tests que valida estructura y datos de cada scraper  
 **Por qué:** Detectar roturas antes de que vayan a producción.  
 **Tareas:**
-- [ ] Crear `tests/test_scrapers.py` con fixtures mock de respuestas reales
-- [ ] Test grantsgov: validar parsing JSON, campos requeridos (title, agency, id)
-- [ ] Test bid/unwomen/devaid: validar selectores encuentran elementos
-- [ ] Test rss_feeds: validar parsing XML, extrae entry.title + entry.link
-- [ ] Test nacional_colombia: validar keywords filtering, rechazo de items inválidos
-- [ ] Ejecutar en CI/CD antes de deploy
-- [ ] Alert si test falla
+- [x] Crear `tests/test_scrapers.py` con fixtures mock de respuestas reales ✅ (ya existía con 100+ tests)
+- [x] Test grantsgov: validar parsing JSON, campos requeridos (title, agency, id)
+- [x] Test bid/unwomen/devaid: validar selectores encuentran elementos
+- [x] Test rss_feeds: validar parsing XML, extrae entry.title + entry.link
+- [x] Test nacional_colombia: validar keywords filtering, rechazo de items inválidos ✅ (en test_scrapers.py)
+- [x] Ejecutar en CI/CD antes de deploy ✅ (.github/workflows/tests.yml)
+- [x] Alert si test falla ✅ (Slack webhook on failure)
 
-**Estimación:** 6h | **Sprint:** S8
+**Estimación:** 6h | **Sprint:** S8 | **Completado:** 1 Junio 2026
+
+**Archivos Creados:**
+- `backend/tests/test_scrapers_selectors.py` (210 líneas) — 21 tests para validar selectores CSS y estructura JSON/XML en HTML realista
+- `.github/workflows/tests.yml` (50 líneas) — CI/CD: corre pytest en push/PR, alerta Slack en fallo
+
+**Archivos Existentes (completados en sesión anterior):**
+- `backend/tests/test_scrapers.py` — 100+ tests para normalize(), helpers, keywords filtering
+
+**Próximo:** S8 Tasks completados (1-5 CRÍTICO)
 
 ---
 
