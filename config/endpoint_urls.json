@@ -1,0 +1,103 @@
+{
+  "grantsgov_api": {
+    "url": "https://api.grants.gov/v1/api/search2",
+    "method": "POST",
+    "content_type": "json",
+    "timeout_sec": 10,
+    "description": "Grants.gov REST API for grant opportunities",
+    "category": "api",
+    "request_body": {
+      "keyword": "education",
+      "oppStatuses": "posted",
+      "rows": 1
+    }
+  },
+  "secop_api": {
+    "url": "https://www.contratos.gov.co/api/v1/search",
+    "method": "GET",
+    "content_type": "json",
+    "timeout_sec": 10,
+    "description": "SECOP API for Colombian public contracts",
+    "category": "api"
+  },
+  "icbf_rss": {
+    "url": "https://www.icbf.gov.co/rss",
+    "method": "GET",
+    "content_type": "xml",
+    "timeout_sec": 10,
+    "description": "ICBF RSS feed for early childhood programs",
+    "category": "rss"
+  },
+  "mineducacion_rss": {
+    "url": "https://www.mineducacion.gov.co/rss",
+    "method": "GET",
+    "content_type": "xml",
+    "timeout_sec": 10,
+    "description": "Ministry of Education RSS feed",
+    "category": "rss"
+  },
+  "fundsforngos_rss": {
+    "url": "https://www2.fundsforngos.org/feed/",
+    "method": "GET",
+    "content_type": "xml",
+    "timeout_sec": 10,
+    "description": "FundsforNGOs - Funding opportunities for nonprofits",
+    "category": "rss"
+  },
+  "ford_foundation_rss": {
+    "url": "https://www.fordfoundation.org/feed/",
+    "method": "GET",
+    "content_type": "xml",
+    "timeout_sec": 10,
+    "description": "Ford Foundation news and updates",
+    "category": "rss"
+  },
+  "hilton_foundation_rss": {
+    "url": "https://www.hiltonfoundation.org/feed/",
+    "method": "GET",
+    "content_type": "xml",
+    "timeout_sec": 10,
+    "description": "Conrad N. Hilton Foundation RSS feed",
+    "category": "rss"
+  },
+  "bernard_van_leer_rss": {
+    "url": "https://bernardvanleer.org/feed/",
+    "method": "GET",
+    "content_type": "xml",
+    "timeout_sec": 10,
+    "description": "Bernard van Leer Foundation - Early childhood development",
+    "category": "rss"
+  },
+  "reliefweb_rss": {
+    "url": "https://reliefweb.int/updates/rss.xml",
+    "method": "GET",
+    "content_type": "xml",
+    "timeout_sec": 10,
+    "description": "ReliefWeb humanitarian updates and funding",
+    "category": "rss"
+  },
+  "developmentaid_rss": {
+    "url": "https://www.developmentaid.org/news-stream/grants",
+    "method": "GET",
+    "content_type": "html",
+    "timeout_sec": 10,
+    "description": "Development Aid - Grants and opportunities",
+    "category": "html"
+  },
+  "google_news_rss": {
+    "url": "https://news.google.com/rss/search?q=education+colombia",
+    "method": "GET",
+    "content_type": "xml",
+    "timeout_sec": 10,
+    "description": "Google News RSS for education opportunities in Colombia",
+    "category": "rss"
+  },
+  "packard_foundation_rss": {
+    "url": "https://www.packard.org/feed/",
+    "method": "GET",
+    "content_type": "xml",
+    "timeout_sec": 10,
+    "description": "David and Lucile Packard Foundation RSS feed",
+    "category": "rss"
+  }
+}

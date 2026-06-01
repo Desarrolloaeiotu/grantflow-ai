@@ -1,0 +1,162 @@
+{
+  "name": "hourly-endpoint-monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "everyHour",
+            "minute": 5
+          }
+        ]
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        50,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/monitor/endpoints/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer gf_live_..."
+            }
+          ]
+        },
+        "responseFormat": "json"
+      },
+      "id": "http-request-endpoint-monitor",
+      "name": "HTTP Request: Run Endpoint Monitor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        250,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "{{ $json.status }}",
+              "operation": "equals",
+              "value2": "critical"
+            }
+          ]
+        }
+      },
+      "id": "if-critical",
+      "name": "If Critical?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        450,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": {
+          "text": "🚨 CRITICAL: GrantFlow Endpoint Monitor detected failures",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "⚠️ One or more critical API endpoints are down or returning invalid responses."
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Failed Endpoints:*\n{{ $json.failed_endpoints.join('\\n') }}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Alerts Sent:*\n{{ $json.alerts_sent }}"
+                }
+              ]
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "→ Check GrantFlow dashboard immediately for details."
+              }
+            }
+          ]
+        }
+      },
+      "id": "slack-notification",
+      "name": "Slack: Notify Admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        650,
+        150
+      ]
+    }
+  ],
+  "connections": {
+    "schedule-trigger": {
+      "main": [
+        [
+          {
+            "node": "http-request-endpoint-monitor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "http-request-endpoint-monitor": {
+      "main": [
+        [
+          {
+            "node": "if-critical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-critical": {
+      "main": [
+        [
+          {
+            "node": "slack-notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "errorWorkflow": ""
+  },
+  "trigger": "schedule-trigger",
+  "staticData": null,
+  "pinData": null
+}

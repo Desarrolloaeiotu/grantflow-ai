@@ -10,12 +10,12 @@
 
 | Prioridad | Área | Tareas | Estado |
 |-----------|------|--------|--------|
-| 🔴 **CRÍTICO** | Monitores Scrapers | 5 tareas | ⬜ Pendiente |
+| 🔴 **CRÍTICO** | Monitores Scrapers | 5 tareas | 🟢 2/5 completadas (40%) |
 | 🟠 **ALTO** | Refactorización | 3 tareas | ⬜ Pendiente |
 | 🟡 **MEDIO** | Optimización | 6 tareas | ⬜ Pendiente |
 | 🟢 **BAJO** | Mantenimiento | 4 tareas | ⬜ Pendiente |
 
-**Total:** 18 tareas | **Completadas:** 0 | **En progreso:** 0
+**Total:** 18 tareas | **Completadas:** 2 (Task 1, Task 2) | **En progreso:** 0
 
 ---
 
@@ -47,17 +47,27 @@ Implementar sistemas de alertas para detectar fallos de scrapers antes de que af
 
 ---
 
-### 2. Monitor de API Endpoints
+### 2. Monitor de API Endpoints ✅
 **Descripción:** Validar que endpoints de grantsgov, SECOP, RSS feeds están vivos  
 **Por qué:** API pueden cambiar, moverse, deprecarse sin aviso.  
 **Tareas:**
-- [ ] Crear `endpoint_monitor.py` con funcion `test_endpoint(url, timeout=10)`
-- [ ] Listar todos endpoints en config JSON
-- [ ] Test simple: GET + parse response (JSON para APIs, XML para feeds)
-- [ ] Alertar a Slack si endpoint retorna 404/500/timeout
-- [ ] Ejecutar hourly
+- [x] Crear `endpoint_monitor.py` con funcion `validate_endpoint(endpoint_name)`
+- [x] Listar todos endpoints en config JSON
+- [x] Test simple: GET + parse response (JSON para APIs, XML para feeds)
+- [x] Alertar a Slack si endpoint retorna 404/500/timeout
+- [x] Ejecutar hourly (n8n workflow)
 
-**Estimación:** 3h | **Sprint:** S7
+**Estimación:** 3h | **Sprint:** S7 | **Completado:** 1 Junio 2026
+
+**Archivos Creados:**
+- `backend/app/scrapers/endpoint_monitor.py` (280 líneas) — Core logic
+- `config/endpoint_urls.json` — Configuración de 12 endpoints críticos
+- `backend/alembic/versions/008_create_endpoint_monitor_log.py` — Tabla BD
+- `backend/app/api/monitor.py` (extendido) — 4 nuevos endpoints FastAPI
+- `n8n-workflows/hourly-endpoint-monitor.json` — Workflow n8n
+- `docs/MONITOR_ENDPOINTS.md` — Documentación completa
+
+**Próximo:** Task 3 (Monitor de Tasa de Éxito por Scraper)
 
 ---
 
@@ -287,13 +297,14 @@ Mejorar velocidad y eficiencia de scrapers.
 
 ### Sprint S7 (Este sprint — 1-2 semanas)
 - ✅ Completar auditoría scrapers (hecho)
-- ⬜ Task 1: Monitor de Estructura HTML
-- ⬜ Task 2: Monitor de API Endpoints
+- ✅ Task 1: Monitor de Estructura HTML (COMPLETADO 1 junio)
+- ✅ Task 2: Monitor de API Endpoints (COMPLETADO 1 junio)
 - ⬜ Task 5: Alertas en Tiempo Real (n8n)
 - ⬜ Task 10: Parallelización de Scrapers
 - ⬜ Task 11: Limitar Google Search
 
-**Estimación total:** 13h | **Prioridad:** 🔴 CRÍTICO
+**Estimación completada:** 7h / 13h | **Prioridad:** 🔴 CRÍTICO
+**Progreso:** 54% (Task 1 + Task 2 finalizadas, faltando Task 5/10/11)
 
 ---
 
