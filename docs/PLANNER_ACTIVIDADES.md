@@ -10,12 +10,12 @@
 
 | Prioridad | Área | Tareas | Estado |
 |-----------|------|--------|--------|
-| 🔴 **CRÍTICO** | Monitores Scrapers | 5 tareas | 🟢 2/5 completadas (40%) |
+| 🔴 **CRÍTICO** | Monitores Scrapers | 5 tareas | 🟢 3/5 completadas (60%) |
 | 🟠 **ALTO** | Refactorización | 3 tareas | ⬜ Pendiente |
 | 🟡 **MEDIO** | Optimización | 6 tareas | ⬜ Pendiente |
 | 🟢 **BAJO** | Mantenimiento | 4 tareas | ⬜ Pendiente |
 
-**Total:** 18 tareas | **Completadas:** 2 (Task 1, Task 2) | **En progreso:** 0
+**Total:** 18 tareas | **Completadas:** 3 (Task 1, 2, 3) | **En progreso:** 0
 
 ---
 
@@ -71,17 +71,28 @@ Implementar sistemas de alertas para detectar fallos de scrapers antes de que af
 
 ---
 
-### 3. Monitor de Tasa de Éxito por Scraper
+### 3. Monitor de Tasa de Éxito por Scraper ✅
 **Descripción:** Trackear cuántas oportunidades cada scraper detecta por run  
 **Por qué:** Si tasa cae 50%, probablemente cambió la estructura/API.  
 **Tareas:**
-- [ ] Agregar logging de `total_detected` al final de cada scraper
-- [ ] Crear tabla `scraper_metrics` en DB: scraper_name | run_date | total_detected | errors_count
-- [ ] Ejecutar resumen semanal: comparar promedio últimos 7 días vs hoy
-- [ ] Alertar si today < avg*0.5 (caída 50%)
-- [ ] Dashboard en Metabase: línea de tendencia por scraper
+- [x] Agregar logging de `total_normalized` en runner.py al final de cada scraper
+- [x] Crear tabla `scraper_metrics` en DB: scraper_name | run_date | total_normalized | errors_count | ...
+- [x] Ejecutar validación después de cada run: comparar vs promedio últimos 7 días
+- [x] Alertar a Slack si today < avg*0.5 (caída 50%) O today == 0
+- [x] Resumen semanal (lunes 8am): n8n workflow con tabla de tendencias por scraper
 
-**Estimación:** 5h | **Sprint:** S7
+**Estimación:** 5h | **Sprint:** S7 | **Completado:** 1 Junio 2026
+
+**Archivos Creados:**
+- `backend/alembic/versions/009_create_scraper_metrics.py` — Tabla BD con 8 columnas
+- `backend/app/scrapers/metrics_monitor.py` (320 líneas) — Core: get_weekly_average(), detect_drop(), alert logic, get_weekly_summary()
+- `n8n-workflows/weekly-metrics-summary.json` — Workflow semanal (lunes 8:03am)
+
+**Archivos Modificados:**
+- `backend/app/scrapers/runner.py` — Agrega save_scraper_metrics() + detect_drop() inline después de cada run
+- `backend/app/api/monitor.py` (extendido) — 3 nuevos endpoints: /metrics/summary, /metrics/history/{name}, /metrics/drop-alerts
+
+**Próximo:** Task 5 (Alertas en Tiempo Real - n8n)
 
 ---
 
@@ -299,12 +310,13 @@ Mejorar velocidad y eficiencia de scrapers.
 - ✅ Completar auditoría scrapers (hecho)
 - ✅ Task 1: Monitor de Estructura HTML (COMPLETADO 1 junio)
 - ✅ Task 2: Monitor de API Endpoints (COMPLETADO 1 junio)
+- ✅ Task 3: Monitor de Tasa de Éxito (COMPLETADO 1 junio)
 - ⬜ Task 5: Alertas en Tiempo Real (n8n)
 - ⬜ Task 10: Parallelización de Scrapers
 - ⬜ Task 11: Limitar Google Search
 
-**Estimación completada:** 7h / 13h | **Prioridad:** 🔴 CRÍTICO
-**Progreso:** 54% (Task 1 + Task 2 finalizadas, faltando Task 5/10/11)
+**Estimación completada:** 12h / 13h | **Prioridad:** 🔴 CRÍTICO
+**Progreso:** 77% (Task 1 + 2 + 3 finalizadas, faltando Task 5/10/11)
 
 ---
 

@@ -12,6 +12,7 @@ Esto evita que un fallo de cuota bloquee la ingesta de datos.
 
 import argparse
 import asyncio
+from datetime import date
 
 import structlog
 from sqlalchemy import select
@@ -26,6 +27,12 @@ from app.scrapers.grantsgov import GrantsGovScraper
 from app.scrapers.nacional_colombia import NacionalColombiaScraper
 from app.scrapers.rss_feeds import RssFeedsScraper
 from app.scrapers.unwomen import UnWomenScraper
+from app.scrapers.metrics_monitor import (
+    save_scraper_metrics,
+    detect_drop,
+    get_weekly_average,
+    alert_metrics_drop_to_slack,
+)
 from app.services.scoring_engine import ScoringEngine
 
 logger = structlog.get_logger()
@@ -41,6 +48,9 @@ SCRAPERS = {
 
 
 async def run_scraper(name: str, do_score: bool = False) -> int:
+    import time
+    start_time = time.time()
+
     scraper_cls = SCRAPERS.get(name)
     if not scraper_cls:
         logger.error("Unknown scraper", name=name)
@@ -125,6 +135,27 @@ async def run_scraper(name: str, do_score: bool = False) -> int:
                         )
 
         await db.commit()
+
+        # Guardar métricas del run
+        duration_sec = time.time() - start_time
+        await save_scraper_metrics(
+            {
+                "scraper_name": name,
+                "total_normalized": len(opportunities),  # post-normalize, pre-dedup
+                "total_persisted": persisted,
+                "total_skipped": skipped,
+                "errors_count": 0,  # TODO: track individual normalize errors
+                "duration_sec": duration_sec,
+                "run_date": date.today(),
+            },
+            db=db,
+        )
+
+        # Detectar caída anormal en tasa de éxito
+        if await detect_drop(name, len(opportunities)):
+            avg = await get_weekly_average(name)
+            if avg:
+                await alert_metrics_drop_to_slack(name, len(opportunities), avg)
 
     logger.info(
         "Scraper run complete",

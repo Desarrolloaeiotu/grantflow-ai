@@ -36,6 +36,9 @@ from app.scrapers.endpoint_monitor import (
     alert_to_slack as endpoint_alert_to_slack,
     persist_endpoint_log,
 )
+from app.scrapers.metrics_monitor import (
+    get_weekly_summary,
+)
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/monitor", tags=["monitor"])
@@ -245,3 +248,152 @@ async def endpoints_monitor_log(
     """
     # TODO: Implementar cuando tabla endpoint_monitor_log esté disponible
     return []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ENDPOINTS DE MONITOREO DE MÉTRICAS DE SCRAPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/metrics/summary")
+async def metrics_summary() -> dict[str, Any]:
+    """Retorna resumen semanal de tasas de éxito de todos los scrapers.
+
+    Usado por:
+      - n8n weekly-metrics-summary workflow (lunes 8am)
+      - Dashboard Metabase
+      - Análisis de tendencias
+    """
+    summary = await get_weekly_summary()
+    return summary
+
+
+@router.get("/metrics/history/{scraper_name}")
+async def metrics_history(
+    scraper_name: str,
+    days: int = Query(30, ge=1, le=90),
+) -> dict[str, Any]:
+    """Retorna histórico de métricas para un scraper específico.
+
+    Parámetros:
+      ?days=30  # Últimos N días (default 30)
+
+    Ejemplo:
+      GET /api/v1/monitor/metrics/history/grantsgov?days=30
+    """
+    from datetime import date, timedelta
+
+    try:
+        async with AsyncSessionLocal() as db:
+            cutoff_date = date.today() - timedelta(days=days)
+
+            from sqlalchemy import text
+
+            result = await db.execute(
+                text("""
+                    SELECT
+                      run_date,
+                      total_normalized,
+                      total_persisted,
+                      total_skipped,
+                      errors_count,
+                      run_duration_sec
+                    FROM scraper_metrics
+                    WHERE scraper_name = :scraper_name
+                      AND run_date >= :cutoff_date
+                    ORDER BY run_date DESC
+                """),
+                {"scraper_name": scraper_name, "cutoff_date": cutoff_date},
+            )
+
+            history = []
+            for row in result:
+                run_date, normalized, persisted, skipped, errors, duration = row
+                history.append(
+                    {
+                        "run_date": run_date.isoformat(),
+                        "total_normalized": normalized,
+                        "total_persisted": persisted,
+                        "total_skipped": skipped,
+                        "errors_count": errors,
+                        "run_duration_sec": round(duration, 2),
+                    }
+                )
+
+            return {
+                "scraper_name": scraper_name,
+                "days": days,
+                "total_runs": len(history),
+                "history": history,
+            }
+
+    except Exception as exc:
+        logger.error("Failed to fetch metrics history", scraper=scraper_name, error=str(exc))
+        raise HTTPException(status_code=500, detail=f"Failed to fetch metrics: {str(exc)}")
+
+
+@router.get("/metrics/drop-alerts")
+async def metrics_drop_alerts() -> dict[str, Any]:
+    """Retorna lista de scrapers que hoy tuvieron caída significativa en detección.
+
+    Útil para dashboards en tiempo real — qué scrapers necesitan atención ahora.
+    """
+    from datetime import date, timedelta
+
+    try:
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import text
+
+            # Query: comparar hoy vs promedio últimos 7 días
+            result = await db.execute(
+                text("""
+                    SELECT
+                      scraper_name,
+                      (SELECT total_normalized FROM scraper_metrics
+                       WHERE scraper_name = sm.scraper_name
+                       AND run_date = CURRENT_DATE
+                       ORDER BY created_at DESC LIMIT 1) as today_normalized,
+                      AVG(total_normalized) as avg_7d
+                    FROM scraper_metrics sm
+                    WHERE run_date >= CURRENT_DATE - INTERVAL '7 days'
+                    GROUP BY scraper_name
+                    HAVING (SELECT total_normalized FROM scraper_metrics
+                           WHERE scraper_name = sm.scraper_name
+                           AND run_date = CURRENT_DATE
+                           ORDER BY created_at DESC LIMIT 1) IS NOT NULL
+                """)
+            )
+
+            alerts = []
+            for row in result:
+                scraper_name, today, avg_7d = row
+
+                if today is None or avg_7d is None:
+                    continue
+
+                # Detectar caída: today < avg*0.5
+                if today == 0 or today < avg_7d * 0.5:
+                    drop_percent = (1.0 - today / avg_7d) * 100 if avg_7d > 0 else 100.0
+                    alerts.append(
+                        {
+                            "scraper_name": scraper_name,
+                            "today": today,
+                            "avg_7d": int(avg_7d),
+                            "drop_percent": round(drop_percent, 1),
+                            "severity": "critical" if today == 0 else "warning",
+                        }
+                    )
+
+            return {
+                "checked_at": datetime.utcnow().isoformat() + "Z",
+                "total_alerts": len(alerts),
+                "alerts": sorted(alerts, key=lambda x: x["drop_percent"], reverse=True),
+            }
+
+    except Exception as exc:
+        logger.error("Failed to fetch drop alerts", error=str(exc))
+        return {
+            "checked_at": datetime.utcnow().isoformat() + "Z",
+            "error": str(exc),
+            "alerts": [],
+        }

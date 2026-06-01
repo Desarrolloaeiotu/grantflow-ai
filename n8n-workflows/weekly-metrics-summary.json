@@ -1,0 +1,125 @@
+{
+  "name": "weekly-metrics-summary",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "everyWeek",
+            "dayOfWeek": "Monday",
+            "hour": 8,
+            "minute": 3
+          }
+        ]
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        50,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://localhost:8000/api/v1/monitor/metrics/summary",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer gf_live_..."
+            }
+          ]
+        },
+        "responseFormat": "json"
+      },
+      "id": "http-request-metrics",
+      "name": "HTTP Request: Get Metrics Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        250,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": {
+          "text": "📊 GrantFlow Weekly Metrics Summary",
+          "blocks": [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "📊 GrantFlow Weekly Metrics Summary"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "Summary for {{ $json.summary_date }}\n\n*Scraper Performance Trends:*\n```\n{{ $json.scrapers | json }}\n```"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "→ Full dashboard: [Metabase Metrics](http://metabase.localhost:3000)"
+              }
+            }
+          ]
+        }
+      },
+      "id": "slack-notification",
+      "name": "Slack: Post Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        450,
+        250
+      ]
+    }
+  ],
+  "connections": {
+    "schedule-trigger": {
+      "main": [
+        [
+          {
+            "node": "http-request-metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "http-request-metrics": {
+      "main": [
+        [
+          {
+            "node": "slack-notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "errorWorkflow": ""
+  },
+  "trigger": "schedule-trigger",
+  "staticData": null,
+  "pinData": null
+}
