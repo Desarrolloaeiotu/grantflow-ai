@@ -56,112 +56,110 @@ export default function ConvocatoriasGlobalPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-bold">Convocatorias Globales</h1>
-          <div className="text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded">
-            Monto mínimo: COP $100M (~USD 24K)
-          </div>
-        </div>
+    <div className="page">
+      <div className="section-hd" style={{ marginBottom: '20px' }}>
+        <h2>Convocatorias Globales</h2>
+        <span className="badge-blue" style={{ marginLeft: 'auto' }}>≥ COP $100M</span>
+      </div>
 
-        <div className="flex gap-4 items-end">
-          <select
-            value={decision}
-            onChange={(e) => {
-              setDecision(e.target.value)
-              setPage(1)
-            }}
-            className="px-3 py-2 border rounded"
-          >
-            <option value="">Todas las decisiones</option>
-            <option value="go">GO</option>
-            <option value="no_go">NO GO</option>
-            <option value="pending">PENDING</option>
-          </select>
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <select
+          value={decision}
+          onChange={(e) => {
+            setDecision(e.target.value)
+            setPage(1)
+          }}
+          style={{
+            padding: '6px 12px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r)',
+            fontSize: '13px',
+            background: 'var(--bg2)',
+            color: 'var(--text)',
+            cursor: 'pointer'
+          }}
+        >
+          <option value="">Todas las decisiones</option>
+          <option value="go">GO</option>
+          <option value="no_go">NO GO</option>
+          <option value="pending">PENDING</option>
+        </select>
 
-          <button
-            onClick={handleExport}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Exportar CSV
-          </button>
-        </div>
+        <button
+          onClick={handleExport}
+          className="link-btn primary"
+          style={{ marginLeft: 'auto' }}
+        >
+          📥 Exportar CSV
+        </button>
       </div>
 
       {loading ? (
-        <p className="text-gray-600">Cargando...</p>
+        <div className="empty-state">Cargando convocatorias...</div>
+      ) : tenders.length === 0 ? (
+        <div className="empty-state">No hay convocatorias que cumplan los criterios</div>
       ) : (
         <>
-          <div className="grid gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px', marginBottom: '24px' }}>
             {tenders.map((tender) => {
               const daysLeft = daysUntilDeadline(tender.deadline)
               const urgency = getUrgencyLabel(daysLeft)
-              const urgencyColor = getUrgencyColor(daysLeft)
 
               return (
-                <div key={tender.id} className="border rounded-lg p-4 hover:shadow-md transition">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg mb-1">{tender.title}</h3>
-                      <p className="text-sm text-gray-600">
-                        Financiador: <span className="font-medium">{tender.funder_name || "—"}</span>
+                <div key={tender.id} className="opp-card go-card">
+                  <div className="opp-top">
+                    <div>
+                      <h3 className="opp-title">{tender.title}</h3>
+                      <p style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>
+                        <strong>{tender.funder_name || "—"}</strong>
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      {tender.decision === 'go' && <span className="badge-go">✓ GO</span>}
+                      {tender.decision === 'no_go' && <span className="badge-nogo">✗ NO GO</span>}
+                      {tender.decision === 'pending' && <span className="badge-warn">⏳ PENDING</span>}
                       {tender.deadline && (
-                        <span className={`text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${urgencyColor}`}>
+                        <span className={daysLeft && daysLeft <= 7 ? 'badge-nogo' : daysLeft && daysLeft <= 15 ? 'badge-warn' : 'badge-muted'}>
                           {urgency}
-                        </span>
-                      )}
-                      {tender.decision && (
-                        <span
-                          className={`text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${
-                            tender.decision === "go"
-                              ? "bg-green-100 text-green-800"
-                              : tender.decision === "no_go"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {tender.decision.toUpperCase()}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+                  <div className="opp-meta" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', margin: '12px 0' }}>
                     <div>
-                      <p className="text-gray-600">Monto máximo</p>
-                      <p className="font-medium">{formatCOP(tender.amount_max_cop)}</p>
+                      <div className="kpi-label">Monto máximo</div>
+                      <div className="opp-amount">{formatCOP(tender.amount_max_cop)}</div>
                     </div>
                     <div>
-                      <p className="text-gray-600">Apertura</p>
-                      <p className="font-medium">{formatDate(tender.open_date)}</p>
+                      <div className="kpi-label">Apertura</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: 500 }}>{formatDate(tender.open_date) || "—"}</div>
                     </div>
                     <div>
-                      <p className="text-gray-600">Cierre</p>
-                      <p className="font-medium">{formatDate(tender.deadline)}</p>
+                      <div className="kpi-label">Cierre</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: 500 }}>{formatDate(tender.deadline) || "—"}</div>
                     </div>
                     <div>
-                      <p className="text-gray-600">Días restantes</p>
-                      <p className="font-medium">{daysLeft !== null ? daysLeft : "—"}</p>
+                      <div className="kpi-label">Días restantes</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: 500 }}>{daysLeft !== null ? daysLeft + 'd' : "—"}</div>
                     </div>
                   </div>
 
                   {tender.description && (
-                    <p className="text-sm text-gray-700 mb-3 line-clamp-2">{tender.description}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--muted2)', lineHeight: 1.5, marginBottom: '12px', borderLeft: '2px solid var(--border2)', paddingLeft: '10px' }}>
+                      {tender.description.length > 150 ? tender.description.slice(0, 150) + '...' : tender.description}
+                    </p>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="opp-links">
                     {tender.url_rfp && (
                       <a
                         href={tender.url_rfp}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline"
+                        className="link-btn"
                       >
-                        RFP →
+                        📄 RFP
                       </a>
                     )}
                     {tender.url_tor && (
@@ -169,9 +167,9 @@ export default function ConvocatoriasGlobalPage() {
                         href={tender.url_tor}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline"
+                        className="link-btn"
                       >
-                        ToR →
+                        📋 ToR
                       </a>
                     )}
                     {tender.url_form && (
@@ -179,9 +177,9 @@ export default function ConvocatoriasGlobalPage() {
                         href={tender.url_form}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline"
+                        className="link-btn"
                       >
-                        Formulario →
+                        ✍️ Formulario
                       </a>
                     )}
                   </div>
@@ -190,31 +188,27 @@ export default function ConvocatoriasGlobalPage() {
             })}
           </div>
 
-          {tenders.length === 0 && (
-            <p className="text-gray-600 text-center py-8">
-              No hay convocatorias que cumplan los criterios
-            </p>
-          )}
-
-          <div className="mt-6 flex justify-between items-center text-sm text-gray-600">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', fontSize: '12px', color: 'var(--muted)' }}>
             <span>
-              Mostrando {tenders.length} de {total} convocatorias
+              Mostrando <strong>{tenders.length}</strong> de <strong>{total}</strong> convocatorias
             </span>
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                className="link-btn"
+                style={{ opacity: page === 1 ? 0.5 : 1, cursor: page === 1 ? 'not-allowed' : 'pointer' }}
               >
-                Anterior
+                ← Anterior
               </button>
-              <span className="px-3 py-1">Página {page}</span>
+              <span style={{ padding: '4px 12px', fontSize: '12px' }}>Página {page}</span>
               <button
                 disabled={page * 25 >= total}
                 onClick={() => setPage(page + 1)}
-                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                className="link-btn"
+                style={{ opacity: page * 25 >= total ? 0.5 : 1, cursor: page * 25 >= total ? 'not-allowed' : 'pointer' }}
               >
-                Siguiente
+                Siguiente →
               </button>
             </div>
           </div>

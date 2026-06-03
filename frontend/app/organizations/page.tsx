@@ -59,104 +59,105 @@ export default function OrganizationsPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-4">Organizaciones</h1>
-        <div className="flex gap-4 items-end">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={filters.invests_colombia}
-              onChange={(e) =>
-                setFilters({ ...filters, invests_colombia: e.target.checked })
-              }
-            />
-            <span>Invierte en Colombia</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={filters.invests_latam}
-              onChange={(e) =>
-                setFilters({ ...filters, invests_latam: e.target.checked })
-              }
-            />
-            <span>Invierte en LatAm</span>
-          </label>
-          <button
-            onClick={handleExport}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Exportar CSV
-          </button>
-        </div>
+    <div className="page">
+      <div className="section-hd" style={{ marginBottom: '20px' }}>
+        <h2>Organizaciones Aliadas</h2>
+      </div>
+
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={filters.invests_colombia}
+            onChange={(e) =>
+              setFilters({ ...filters, invests_colombia: e.target.checked })
+            }
+            style={{ cursor: 'pointer' }}
+          />
+          <span>Invierte en Colombia</span>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={filters.invests_latam}
+            onChange={(e) =>
+              setFilters({ ...filters, invests_latam: e.target.checked })
+            }
+            style={{ cursor: 'pointer' }}
+          />
+          <span>Invierte en LatAm</span>
+        </label>
+        <button
+          onClick={handleExport}
+          className="link-btn primary"
+          style={{ marginLeft: 'auto' }}
+        >
+          📥 Exportar CSV
+        </button>
       </div>
 
       {loading ? (
-        <p className="text-gray-600">Cargando...</p>
+        <div className="empty-state">Cargando organizaciones...</div>
+      ) : organizations.length === 0 ? (
+        <div className="empty-state">No hay organizaciones que cumplan los criterios</div>
       ) : (
         <>
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full border-collapse">
-              <thead className="bg-gray-100">
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <th className="text-left p-3 border-b">Nombre</th>
-                  <th className="text-left p-3 border-b">País</th>
-                  <th className="text-left p-3 border-b">Tipo</th>
-                  <th className="text-center p-3 border-b">CO</th>
-                  <th className="text-center p-3 border-b">LatAm</th>
-                  <th className="text-left p-3 border-b">Rol aeioTU</th>
-                  <th className="text-left p-3 border-b">Contactos</th>
+                  <th>Nombre</th>
+                  <th>País</th>
+                  <th>Tipo</th>
+                  <th style={{ textAlign: 'center' }}>CO</th>
+                  <th style={{ textAlign: 'center' }}>LatAm</th>
+                  <th>Rol aeioTU</th>
+                  <th>Contactos</th>
                 </tr>
               </thead>
               <tbody>
                 {organizations.map((org) => (
-                  <tr key={org.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3">
-                      <a
-                        href={`/organizations/${org.id}`}
-                        className="text-blue-600 hover:underline font-medium"
-                      >
-                        {org.name}
-                      </a>
+                  <tr key={org.id}>
+                    <td className="td-link" style={{ fontWeight: 500 }}>
+                      {org.name}
                     </td>
-                    <td className="p-3">{org.country || "—"}</td>
-                    <td className="p-3 text-sm">{org.org_type || "—"}</td>
-                    <td className="p-3 text-center text-sm">
-                      {org.invests_colombia ? "✓" : ""}
+                    <td className="td-muted">{org.country || "—"}</td>
+                    <td className="td-muted">{org.org_type || "—"}</td>
+                    <td style={{ textAlign: 'center', color: org.invests_colombia ? 'var(--go)' : 'var(--muted2)', fontWeight: org.invests_colombia ? 600 : 400 }}>
+                      {org.invests_colombia ? "✓" : "—"}
                     </td>
-                    <td className="p-3 text-center text-sm">
-                      {org.invests_latam ? "✓" : ""}
+                    <td style={{ textAlign: 'center', color: org.invests_latam ? 'var(--go)' : 'var(--muted2)', fontWeight: org.invests_latam ? 600 : 400 }}>
+                      {org.invests_latam ? "✓" : "—"}
                     </td>
-                    <td className="p-3 text-sm">{org.aeiotu_role || "—"}</td>
-                    <td className="p-3 text-sm text-gray-600">
-                      {org.contacts?.length || 0} contactos
-                    </td>
+                    <td><span className="badge-blue">{org.aeiotu_role || "—"}</span></td>
+                    <td className="td-muted">{org.contacts?.length || 0}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', fontSize: '12px', color: 'var(--muted)' }}>
             <span>
-              Mostrando {organizations.length} de {total} organizaciones
+              Mostrando <strong>{organizations.length}</strong> de <strong>{total}</strong> organizaciones
             </span>
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                className="link-btn"
+                style={{ opacity: page === 1 ? 0.5 : 1, cursor: page === 1 ? 'not-allowed' : 'pointer' }}
               >
-                Anterior
+                ← Anterior
               </button>
-              <span className="px-3 py-1">Página {page}</span>
+              <span style={{ padding: '4px 12px', fontSize: '12px' }}>Página {page}</span>
               <button
                 disabled={page * 25 >= total}
                 onClick={() => setPage(page + 1)}
-                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                className="link-btn"
+                style={{ opacity: page * 25 >= total ? 0.5 : 1, cursor: page * 25 >= total ? 'not-allowed' : 'pointer' }}
               >
-                Siguiente
+                Siguiente →
               </button>
             </div>
           </div>

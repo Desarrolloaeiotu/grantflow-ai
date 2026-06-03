@@ -55,114 +55,120 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-4">Contactos Clave Globales</h1>
-        <div className="flex gap-4 items-end">
-          <select
-            value={roleFilter}
-            onChange={(e) => {
-              setRoleFilter(e.target.value)
-              setPage(1)
-            }}
-            className="px-3 py-2 border rounded"
-          >
-            <option value="">Todos los roles</option>
-            <option value="partnerships">Partnerships</option>
-            <option value="grants">Grants Manager</option>
-            <option value="cooperation">Cooperación</option>
-            <option value="innovation">Innovación</option>
-            <option value="development">Desarrollo</option>
-          </select>
+    <div className="page">
+      <div className="section-hd" style={{ marginBottom: '20px' }}>
+        <h2>Contactos Clave Globales</h2>
+      </div>
 
-          <button
-            onClick={handleExport}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Exportar CSV
-          </button>
-        </div>
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <select
+          value={roleFilter}
+          onChange={(e) => {
+            setRoleFilter(e.target.value)
+            setPage(1)
+          }}
+          style={{
+            padding: '6px 12px',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r)',
+            fontSize: '13px',
+            background: 'var(--bg2)',
+            color: 'var(--text)',
+            cursor: 'pointer'
+          }}
+        >
+          <option value="">Todos los roles</option>
+          <option value="partnerships">Partnerships</option>
+          <option value="grants">Grants Manager</option>
+          <option value="cooperation">Cooperación</option>
+          <option value="innovation">Innovación</option>
+          <option value="development">Desarrollo</option>
+        </select>
+
+        <button
+          onClick={handleExport}
+          className="link-btn primary"
+          style={{ marginLeft: 'auto' }}
+        >
+          📥 Exportar CSV
+        </button>
       </div>
 
       {loading ? (
-        <p className="text-gray-600">Cargando...</p>
+        <div className="empty-state">Cargando contactos...</div>
+      ) : contacts.length === 0 ? (
+        <div className="empty-state">No hay contactos que cumplan los criterios</div>
       ) : (
         <>
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full border-collapse">
-              <thead className="bg-gray-100">
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <th className="text-left p-3 border-b">Nombre</th>
-                  <th className="text-left p-3 border-b">Cargo</th>
-                  <th className="text-left p-3 border-b">Rol</th>
-                  <th className="text-left p-3 border-b">Email</th>
-                  <th className="text-left p-3 border-b">LinkedIn</th>
-                  <th className="text-left p-3 border-b">Organización</th>
+                  <th>Nombre</th>
+                  <th>Cargo</th>
+                  <th>Rol</th>
+                  <th>Email</th>
+                  <th>LinkedIn</th>
+                  <th>Organización</th>
                 </tr>
               </thead>
               <tbody>
                 {contacts.map((contact) => (
-                  <tr key={contact.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3 font-medium">{contact.full_name}</td>
-                    <td className="p-3 text-sm text-gray-700">{contact.title || "—"}</td>
-                    <td className="p-3 text-sm">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                        {contact.role_category || "—"}
-                      </span>
-                    </td>
-                    <td className="p-3 text-sm text-blue-600">
+                  <tr key={contact.id}>
+                    <td style={{ fontWeight: 500 }}>{contact.full_name}</td>
+                    <td className="td-muted">{contact.title || "—"}</td>
+                    <td><span className="badge-blue">{contact.role_category || "—"}</span></td>
+                    <td className="td-link">
                       {contact.email ? (
-                        <a href={`mailto:${contact.email}`}>{contact.email}</a>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="p-3 text-sm">
-                      {contact.linkedin_url ? (
-                        <a
-                          href={contact.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          Perfil →
+                        <a href={`mailto:${contact.email}`} style={{ color: 'var(--blue)' }}>
+                          {contact.email}
                         </a>
                       ) : (
                         "—"
                       )}
                     </td>
-                    <td className="p-3 text-sm text-gray-700">{contact.funder_name || "—"}</td>
+                    <td className="td-link">
+                      {contact.linkedin_url ? (
+                        <a
+                          href={contact.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: 'var(--blue)' }}
+                        >
+                          Perfil ↗
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="td-muted">{contact.funder_name || "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {contacts.length === 0 && (
-            <p className="text-gray-600 text-center py-8">
-              No hay contactos que cumplan los criterios
-            </p>
-          )}
-
-          <div className="mt-6 flex justify-between items-center text-sm text-gray-600">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', fontSize: '12px', color: 'var(--muted)' }}>
             <span>
-              Mostrando {contacts.length} de {total} contactos
+              Mostrando <strong>{contacts.length}</strong> de <strong>{total}</strong> contactos
             </span>
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
-                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                className="link-btn"
+                style={{ opacity: page === 1 ? 0.5 : 1, cursor: page === 1 ? 'not-allowed' : 'pointer' }}
               >
-                Anterior
+                ← Anterior
               </button>
-              <span className="px-3 py-1">Página {page}</span>
+              <span style={{ padding: '4px 12px', fontSize: '12px' }}>Página {page}</span>
               <button
                 disabled={page * 25 >= total}
                 onClick={() => setPage(page + 1)}
-                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                className="link-btn"
+                style={{ opacity: page * 25 >= total ? 0.5 : 1, cursor: page * 25 >= total ? 'not-allowed' : 'pointer' }}
               >
-                Siguiente
+                Siguiente →
               </button>
             </div>
           </div>
