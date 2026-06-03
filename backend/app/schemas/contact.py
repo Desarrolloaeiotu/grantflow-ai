@@ -35,6 +35,13 @@ class KeyContactRead(BaseModel):
     funder_name: str | None = None
 
 
+class ContactList(BaseModel):
+    items: list[KeyContactRead]
+    total: int
+    page: int = 1
+    size: int = 25
+
+
 class EmailVerifyRequest(BaseModel):
     email: str
     name: str | None = None

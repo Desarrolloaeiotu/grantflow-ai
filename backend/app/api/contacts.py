@@ -14,20 +14,20 @@ from app.core.database import get_db
 from app.core.security import require_api_key
 from app.models.contact import Contact
 from app.models.funder import Funder
-from app.schemas.contact import ContactRead, EmailVerifyRequest, KeyContactRead
+from app.schemas.contact import ContactRead, ContactList, EmailVerifyRequest, KeyContactRead
 
 logger = structlog.get_logger()
 router = APIRouter()
 
 
-@router.get("", response_model=list[ContactRead])
+@router.get("", response_model=ContactList)
 async def list_contacts(
     funder_id: uuid.UUID | None = Query(None),
     role_category: Optional[str] = None,
     page: int = Query(1, ge=1),
     size: int = Query(25, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-) -> list[ContactRead]:
+) -> ContactList:
     """List contacts with optional filters.
 
     Query params:
@@ -40,13 +40,35 @@ async def list_contacts(
     if role_category:
         filters.append(Contact.role_category == role_category)
 
-    q = select(Contact)
+    # Get total count
+    count_q = select(func.count(Contact.id))
+    if filters:
+        count_q = count_q.where(and_(*filters))
+    total = (await db.execute(count_q)).scalar() or 0
+
+    # Get paginated results with funder relationship
+    q = select(Contact).options(selectinload(Contact.funder))
     if filters:
         q = q.where(and_(*filters))
     q = q.offset((page - 1) * size).limit(size).order_by(Contact.fetched_at.desc())
 
     rows = (await db.execute(q)).scalars().all()
-    return [ContactRead.model_validate(c) for c in rows]
+
+    items = [
+        KeyContactRead(
+            id=c.id,
+            full_name=c.full_name,
+            last_name=c.last_name,
+            title=c.title,
+            role_category=c.role_category,
+            email=c.email,
+            linkedin_url=c.linkedin_url,
+            funder_name=c.funder.name if c.funder else None,
+        )
+        for c in rows
+    ]
+
+    return ContactList(items=items, total=total, page=page, size=size)
 
 
 @router.post("/verify")
