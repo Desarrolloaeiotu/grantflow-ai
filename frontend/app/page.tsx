@@ -28,56 +28,31 @@ export default function HomePage() {
               </p>
             </div>
 
+            <style>{`
+              .nav-link {
+                display: block;
+                padding: 12px 16px;
+                background: var(--bg3);
+                border: 1px solid var(--border);
+                border-radius: var(--r);
+                color: var(--blue);
+                text-decoration: none;
+                font-size: 14px;
+                font-weight: 500;
+                transition: background 0.2s;
+              }
+              .nav-link:hover {
+                background: var(--bg);
+              }
+            `}</style>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <Link href="/organizations" style={{
-                display: 'block',
-                padding: '12px 16px',
-                background: 'var(--bg3)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--r)',
-                color: 'var(--blue)',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: 500,
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
-              >
+              <Link href="/organizations" className="nav-link">
                 ◆ Organizaciones
               </Link>
-              <Link href="/convocatorias" style={{
-                display: 'block',
-                padding: '12px 16px',
-                background: 'var(--bg3)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--r)',
-                color: 'var(--blue)',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: 500,
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
-              >
+              <Link href="/convocatorias" className="nav-link">
                 ◇ Convocatorias (≥ COP $100M)
               </Link>
-              <Link href="/contacts" style={{
-                display: 'block',
-                padding: '12px 16px',
-                background: 'var(--bg3)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--r)',
-                color: 'var(--blue)',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: 500,
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
-              >
+              <Link href="/contacts" className="nav-link">
                 · Contactos Clave
               </Link>
             </div>
@@ -95,55 +70,13 @@ export default function HomePage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <Link href="/nacional" style={{
-                display: 'block',
-                padding: '12px 16px',
-                background: 'var(--bg3)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--r)',
-                color: 'var(--blue)',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: 500,
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
-              >
+              <Link href="/nacional" className="nav-link">
                 ▶ Radar de Oportunidades
               </Link>
-              <Link href="/nacional/convocatorias" style={{
-                display: 'block',
-                padding: '12px 16px',
-                background: 'var(--bg3)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--r)',
-                color: 'var(--blue)',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: 500,
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
-              >
+              <Link href="/nacional/convocatorias" className="nav-link">
                 ◇ Convocatorias (≥ COP $50M)
               </Link>
-              <Link href="/nacional/contacts" style={{
-                display: 'block',
-                padding: '12px 16px',
-                background: 'var(--bg3)',
-                border: '1px solid var(--border)',
-                borderRadius: 'var(--r)',
-                color: 'var(--blue)',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: 500,
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
-              >
+              <Link href="/nacional/contacts" className="nav-link">
                 · Contactos Clave Colombia
               </Link>
             </div>
