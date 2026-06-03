@@ -27,12 +27,14 @@ export default function ContactsPage() {
       if (roleFilter) params.append("role_category", roleFilter)
 
       const res = await fetch(`${API_URL}/api/v1/contacts?${params}`)
-      const data: ApiListResponse<KeyContact> = await res.json()
+      const data: any = await res.json()
 
-      setContacts(data.items)
-      setTotal(data.total)
+      setContacts(Array.isArray(data) ? data : (data.items || []))
+      setTotal(data.total || 0)
     } catch (error) {
       console.error("Error fetching contacts:", error)
+      setContacts([])
+      setTotal(0)
     } finally {
       setLoading(false)
     }
