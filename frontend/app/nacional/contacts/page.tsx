@@ -5,7 +5,7 @@ import { KeyContact, ApiListResponse } from "@/app/types"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-export default function ContactsPage() {
+export default function ContatosNacionalPage() {
   const [contacts, setContacts] = useState<KeyContact[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -57,7 +57,7 @@ export default function ContactsPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-4">Contactos Clave Globales</h1>
+        <h1 className="text-3xl font-bold mb-4">Contactos Clave Colombia</h1>
         <div className="flex gap-4 items-end">
           <select
             value={roleFilter}
