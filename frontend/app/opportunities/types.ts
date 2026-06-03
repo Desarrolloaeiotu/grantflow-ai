@@ -2,12 +2,16 @@ export interface Opportunity {
   id: string
   title: string
   description: string | null
+  funder_name: string | null
+  funder_id: string | null
   score_total: number | null
   decision: string | null
   urgency: string | null
   deadline: string | null
   source_name: string | null
   url_rfp: string | null
+  url_tor: string | null
+  url_form: string | null
   org_website: string | null
   org_email: string | null
   org_email_verified: boolean
@@ -20,6 +24,8 @@ export interface Opportunity {
   capital_type: string | null
   amount_min_cop: number | null
   amount_max_cop: number | null
+  tender_type: string | null
+  open_date: string | null
   score_details: {
     c1?: number
     c2?: number

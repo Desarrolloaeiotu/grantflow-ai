@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import ARRAY, Boolean, Text
 from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
@@ -33,3 +33,6 @@ class Funder(Base):
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+
+    # ── Relationships ────────────────────────────────────────────────────────
+    contacts: Mapped[list['Contact']] = relationship('Contact', back_populates=None)

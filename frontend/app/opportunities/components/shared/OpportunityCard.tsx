@@ -130,7 +130,7 @@ export default function OpportunityCard({
               <div className={styles.scoringGrid}>
                 {['c1', 'c2', 'c3', 'c4', 'c5'].map((criterion) => {
                   const value = opportunity.score_details?.[criterion as keyof typeof opportunity.score_details] ?? 0
-                  const percentage = (value / 2) * 100
+                  const percentage = ((value as number) / 2) * 100
                   return (
                     <div key={criterion} className={styles.scoringItem}>
                       <div className={styles.criterionLabel}>{criterion}</div>
