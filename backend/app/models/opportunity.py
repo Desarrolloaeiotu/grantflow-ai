@@ -23,11 +23,14 @@ class Opportunity(Base):
     amount_max_cop: Mapped[int | None] = mapped_column(BigInteger)
     deadline: Mapped[date | None] = mapped_column(Date)
     target_contact_date: Mapped[date | None] = mapped_column(Date)
+    open_date: Mapped[date | None] = mapped_column(Date)
 
     # URLs
     url_rfp: Mapped[str | None] = mapped_column(Text)
     url_source: Mapped[str | None] = mapped_column(Text)
     source_name: Mapped[str | None] = mapped_column(Text)
+    url_tor: Mapped[str | None] = mapped_column(Text)
+    url_form: Mapped[str | None] = mapped_column(Text)
 
     # Contacto de la organización
     org_website: Mapped[str | None] = mapped_column(Text)
@@ -47,6 +50,7 @@ class Opportunity(Base):
     # Clasificación y scoring
     market_window: Mapped[str | None] = mapped_column(Text)
     capital_type: Mapped[str | None] = mapped_column(Text)  # grant|loan|investment|contract
+    tender_type: Mapped[str | None] = mapped_column(Text)  # grant|premio|evento|curso
     score_total: Mapped[int | None] = mapped_column(Integer)
     score_details: Mapped[dict | None] = mapped_column(JSONB)
     decision: Mapped[str | None] = mapped_column(Text)  # go|no_go|pending

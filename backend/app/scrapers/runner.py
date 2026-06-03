@@ -26,6 +26,7 @@ from app.scrapers.developmentaid import DevelopmentAidScraper
 from app.scrapers.grantsgov import GrantsGovScraper
 from app.scrapers.nacional_colombia import NacionalColombiaScraper
 from app.scrapers.rss_feeds import RssFeedsScraper
+from app.scrapers.tenders_scraper import TendersScraper
 from app.scrapers.unwomen import UnWomenScraper
 from app.scrapers.metrics_monitor import (
     save_scraper_metrics,
@@ -41,6 +42,11 @@ logger = structlog.get_logger()
 MAX_CONCURRENT = 4
 
 SCRAPERS = {
+    # v2: Tenders scrapers with amount filtering
+    "tenders_global": ("tenders", "global"),      # ≥ COP $100M — Grants.gov, BID, UN Women, RSS
+    "tenders_nacional": ("tenders", "nacional"),  # ≥ COP $50M — Nacional Colombia
+
+    # Legacy: Individual scrapers (kept for backwards compatibility)
     "nacional_colombia": NacionalColombiaScraper,  # 5am — prioridad nacional
     "grantsgov": GrantsGovScraper,
     "bid": BidScraper,
@@ -54,17 +60,30 @@ async def run_scraper(name: str, do_score: bool = False) -> int:
     import time
     start_time = time.time()
 
-    scraper_cls = SCRAPERS.get(name)
-    if not scraper_cls:
+    scraper_config = SCRAPERS.get(name)
+    if not scraper_config:
         logger.error("Unknown scraper", name=name)
         return 0
 
-    scraper = scraper_cls()
-    try:
-        opportunities = await scraper.run()
-    except ScraperError as exc:
-        logger.error("Scraper failed", scraper=name, error=str(exc))
-        return 0
+    # Handle both new TendersScraper (tuple) and legacy BaseScraper (class)
+    if isinstance(scraper_config, tuple):
+        # v2 TendersScraper: ("tenders", "global"|"nacional")
+        scraper_type, region = scraper_config
+        scraper = TendersScraper()
+        try:
+            opportunities = await scraper.run(region=region)
+        except Exception as exc:
+            logger.error("Tenders scraper failed", scraper=name, region=region, error=str(exc))
+            return 0
+    else:
+        # Legacy BaseScraper
+        scraper_cls = scraper_config
+        scraper = scraper_cls()
+        try:
+            opportunities = await scraper.run()
+        except ScraperError as exc:
+            logger.error("Scraper failed", scraper=name, error=str(exc))
+            return 0
 
     engine = ScoringEngine() if do_score else None
     persisted = 0

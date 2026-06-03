@@ -1,25 +1,50 @@
+import base64
+import csv
+import io
 import uuid
+from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.core.security import require_api_key
 from app.models.contact import Contact
-from app.schemas.contact import ContactRead, EmailVerifyRequest
+from app.models.funder import Funder
+from app.schemas.contact import ContactRead, EmailVerifyRequest, KeyContactRead
 
+logger = structlog.get_logger()
 router = APIRouter()
 
 
 @router.get("", response_model=list[ContactRead])
 async def list_contacts(
     funder_id: uuid.UUID | None = Query(None),
+    role_category: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    size: int = Query(25, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ) -> list[ContactRead]:
-    q = select(Contact)
+    """List contacts with optional filters.
+
+    Query params:
+    - funder_id: Filter by organization ID
+    - role_category: partnerships | grants | cooperation | innovation | development
+    """
+    filters = []
     if funder_id:
-        q = q.where(Contact.funder_id == funder_id)
+        filters.append(Contact.funder_id == funder_id)
+    if role_category:
+        filters.append(Contact.role_category == role_category)
+
+    q = select(Contact)
+    if filters:
+        q = q.where(and_(*filters))
+    q = q.offset((page - 1) * size).limit(size).order_by(Contact.fetched_at.desc())
+
     rows = (await db.execute(q)).scalars().all()
     return [ContactRead.model_validate(c) for c in rows]
 
@@ -101,3 +126,67 @@ async def enrich_contacts(
             "message": str(e),
             "contacts_found": 0,
         }
+
+
+@router.get("/export/csv")
+async def export_contacts_csv(
+    session: AsyncSession = Depends(get_db),
+    role_category: Optional[str] = None,
+    region: Optional[str] = None,  # colombia | global
+) -> dict:
+    """Export contacts to CSV.
+
+    Returns CSV content as base64-encoded string.
+
+    Query params:
+    - role_category: Filter by role (partnerships, grants, cooperation, innovation, development)
+    - region: 'colombia' for national contacts | 'global' for international | None for all
+    """
+    filters = []
+
+    if role_category:
+        filters.append(Contact.role_category == role_category)
+
+    stmt = select(Contact)
+    if filters:
+        stmt = stmt.where(and_(*filters))
+    stmt = stmt.options(selectinload(Contact.funder)).order_by(Contact.fetched_at.desc())
+
+    result = await session.execute(stmt)
+    contacts = result.scalars().unique().all()
+
+    # Create CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Headers
+    headers = [
+        "ID", "Nombre", "Apellido", "Cargo", "Categoría de Rol",
+        "Email", "LinkedIn", "Organización", "Historial aeioTU",
+        "Fuente", "Fecha de Obtención",
+    ]
+    writer.writerow(headers)
+
+    # Rows
+    for contact in contacts:
+        writer.writerow([
+            str(contact.id),
+            contact.full_name,
+            contact.last_name or "",
+            contact.title or "",
+            contact.role_category or "",
+            contact.email or "",
+            contact.linkedin_url or "",
+            contact.funder.name if contact.funder else "",
+            "Sí" if contact.aeiotu_connection else "No",
+            contact.source,
+            contact.fetched_at.strftime("%Y-%m-%d") if contact.fetched_at else "",
+        ])
+
+    csv_content = output.getvalue()
+    csv_b64 = base64.b64encode(csv_content.encode()).decode()
+
+    return {
+        "filename": f"contacts_{region or 'all'}.csv",
+        "content_base64": csv_b64,
+    }

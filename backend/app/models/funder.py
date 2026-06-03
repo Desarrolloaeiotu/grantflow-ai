@@ -21,6 +21,15 @@ class Funder(Base):
     website: Mapped[str | None] = mapped_column(Text)
     has_history: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[str | None] = mapped_column(Text)
+
+    # ── Organizations v2 fields ──────────────────────────────────────────
+    access_type: Mapped[str | None] = mapped_column(Text)  # convocatoria|mixto|relacional|invitacion
+    strategic_obj: Mapped[str | None] = mapped_column(Text)  # capital|exportacion_modelo|red
+    invests_colombia: Mapped[bool] = mapped_column(Boolean, default=False)
+    invests_latam: Mapped[bool] = mapped_column(Boolean, default=False)
+    aeiotu_role: Mapped[str | None] = mapped_column(Text)  # financiador|aliado|escalador|visibilidad
+    general_objective: Mapped[str | None] = mapped_column(Text)
+
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

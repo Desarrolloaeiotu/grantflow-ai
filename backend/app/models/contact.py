@@ -13,6 +13,7 @@ class Contact(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name: Mapped[str] = mapped_column(Text, nullable=False)
+    last_name: Mapped[str | None] = mapped_column(Text)
     title: Mapped[str | None] = mapped_column(Text)
     email: Mapped[str | None] = mapped_column(Text)
     linkedin_url: Mapped[str | None] = mapped_column(Text)
@@ -21,6 +22,13 @@ class Contact(Base):
     )
     aeiotu_connection: Mapped[bool] = mapped_column(Boolean, default=False)
     source: Mapped[str] = mapped_column(Text, default="apollo")  # apollo|manual|linkedin
+
+    # ── Key contact v2 fields ────────────────────────────────────────────
+    role_category: Mapped[str | None] = mapped_column(Text)  # partnerships|grants|cooperation|innovation|development
+    opportunity_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("opportunities.id", ondelete="SET NULL"), nullable=True
+    )
+
     fetched_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
