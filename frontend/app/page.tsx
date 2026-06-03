@@ -1,74 +1,161 @@
-import { Suspense } from 'react'
-import { getMetrics, getOpportunities } from './opportunities/data/opportunities-queries'
-import RunScraperButton from './components/RunScraperButton'
-import OpportunitiesSidebar from './opportunities/components/OpportunitiesSidebar'
-import AlertasSection from './opportunities/components/AlertasSection'
-import RadarSection from './opportunities/components/RadarSection'
-import PipelineSection from './opportunities/components/PipelineSection'
-import ContactosSection from './opportunities/components/ContactosSection'
+import Link from 'next/link'
 
-interface OpportunitiesPageProps {
-  searchParams: Promise<{ section?: string; decision?: string; window?: string; urgency?: string; capital_type?: string; score_min?: string; q?: string; page?: string }>
-}
-
-export default async function OpportunitiesPage({
-  searchParams,
-}: OpportunitiesPageProps) {
-  const params = await searchParams
-  const section = params.section || 'radar'
-
-  let metrics: any = null
-  let list: any = null
-
-  try {
-    [metrics, list] = await Promise.all([
-      getMetrics(),
-      getOpportunities({}),
-    ])
-  } catch (error) {
-    console.error('Error fetching Opportunities data:', error)
-  }
-
-  const opportunities = list?.items || []
-
+export default function HomePage() {
   return (
-    <div style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--bg)' }}>
-      <main style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{
-          position: 'sticky',
-          top: 0,
-          backgroundColor: 'var(--bg2)',
-          borderBottom: '1px solid var(--border)',
-          padding: '16px 24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 10,
-        }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text)' }}>Oportunidades Global</h1>
-          <RunScraperButton
-            source="grantsgov"
-            label="▶ Ejecutar Scraper Global"
-          />
+    <div className="page" style={{ padding: '48px 40px' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ marginBottom: '48px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text)', marginBottom: '16px' }}>
+            GrantFlow AI
+          </h1>
+          <p style={{ fontSize: '16px', color: 'var(--muted)', lineHeight: '1.6' }}>
+            Sistema de inteligencia comercial para prospección estratégica de oportunidades de financiamiento.
+            Transforma la búsqueda manual de grants en un proceso automatizado, estandarizado y escalable.
+          </p>
         </div>
 
-        <Suspense fallback={<div style={{ padding: '24px', color: 'var(--muted)' }}>Cargando...</div>}>
-          {section === 'alertas' && (
-            <AlertasSection opportunities={opportunities} />
-          )}
-          {section === 'radar' && (
-            <RadarSection initialList={list} />
-          )}
-          {section === 'pipeline' && (
-            <PipelineSection opportunities={opportunities} />
-          )}
-          {section === 'contactos' && (
-            <ContactosSection opportunities={opportunities} />
-          )}
-        </Suspense>
-      </main>
+        {/* Modules Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '48px' }}>
+          {/* Global Module */}
+          <div style={{ padding: '32px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
+                Módulo Global
+              </h2>
+              <p style={{ fontSize: '13px', color: 'var(--muted)' }}>
+                Convocatorias internacionales ≥ COP $100M
+              </p>
+            </div>
 
-      <OpportunitiesSidebar metrics={metrics} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Link href="/organizations" style={{
+                display: 'block',
+                padding: '12px 16px',
+                background: 'var(--bg3)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r)',
+                color: 'var(--blue)',
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
+              >
+                ◆ Organizaciones
+              </Link>
+              <Link href="/convocatorias" style={{
+                display: 'block',
+                padding: '12px 16px',
+                background: 'var(--bg3)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r)',
+                color: 'var(--blue)',
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
+              >
+                ◇ Convocatorias (≥ COP $100M)
+              </Link>
+              <Link href="/contacts" style={{
+                display: 'block',
+                padding: '12px 16px',
+                background: 'var(--bg3)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r)',
+                color: 'var(--blue)',
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
+              >
+                · Contactos Clave
+              </Link>
+            </div>
+          </div>
+
+          {/* Nacional Module */}
+          <div style={{ padding: '32px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--r)' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>
+                Módulo Nacional
+              </h2>
+              <p style={{ fontSize: '13px', color: 'var(--muted)' }}>
+                Inteligencia de oportunidades en Colombia
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Link href="/nacional" style={{
+                display: 'block',
+                padding: '12px 16px',
+                background: 'var(--bg3)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r)',
+                color: 'var(--blue)',
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
+              >
+                ▶ Radar de Oportunidades
+              </Link>
+              <Link href="/nacional/convocatorias" style={{
+                display: 'block',
+                padding: '12px 16px',
+                background: 'var(--bg3)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r)',
+                color: 'var(--blue)',
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
+              >
+                ◇ Convocatorias (≥ COP $50M)
+              </Link>
+              <Link href="/nacional/contacts" style={{
+                display: 'block',
+                padding: '12px 16px',
+                background: 'var(--bg3)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r)',
+                color: 'var(--blue)',
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: 500,
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg3)'}
+              >
+                · Contactos Clave Colombia
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Info */}
+        <div style={{ padding: '24px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: '13px', color: 'var(--muted)', lineHeight: '1.6' }}>
+          <strong style={{ color: 'var(--text)' }}>GrantFlow v2.0</strong> — Módulos independientes para prospección estratégica.
+          Selecciona un módulo en la barra lateral o navega desde los enlaces de arriba.
+        </div>
+      </div>
     </div>
   )
 }
