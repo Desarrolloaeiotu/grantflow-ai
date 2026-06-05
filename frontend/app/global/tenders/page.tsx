@@ -6,7 +6,7 @@ import { Tender, ApiListResponse } from "@/app/types"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-export default function NacionalConvocatoriasPage() {
+export default function GlobalTendersPage() {
   const router = useRouter()
   const [tenders, setTenders] = useState<Tender[]>([])
   const [total, setTotal] = useState(0)
@@ -25,7 +25,7 @@ export default function NacionalConvocatoriasPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams({
-        region: "nacional",
+        region: "global",
         page: page.toString(),
         size: "10",
       })
@@ -47,7 +47,7 @@ export default function NacionalConvocatoriasPage() {
 
   async function handleExport() {
     try {
-      const res = await fetch(`${API_URL}/api/v1/tenders/export?region=nacional`)
+      const res = await fetch(`${API_URL}/api/v1/tenders/export?region=global`)
       const data = await res.json()
       const csv = atob(data.content_base64)
       const blob = new Blob([csv], { type: "text/csv" })
@@ -98,9 +98,9 @@ export default function NacionalConvocatoriasPage() {
   return (
     <div className="page">
       <div className="section-hd" style={{ marginBottom: '20px' }}>
-        <h2>Convocatorias NACIONAL</h2>
+        <h2>Convocatorias GLOBAL</h2>
         <p style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '4px' }}>
-          {total} oportunidades colombianas ≥ COP $50M de financiamiento público y privado
+          {total} oportunidades internacionales ≥ COP $100M
         </p>
       </div>
 
@@ -166,7 +166,7 @@ export default function NacionalConvocatoriasPage() {
               return (
                 <div
                   key={tender.id}
-                  onClick={() => router.push(`/nacional/convocatorias/${tender.id}`)}
+                  onClick={() => router.push(`/global/tenders/${tender.id}`)}
                   style={{
                     padding: '20px',
                     border: '1px solid var(--border)',
