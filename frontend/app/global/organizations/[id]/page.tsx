@@ -75,7 +75,7 @@ export default function GlobalOrganizationDetailPage() {
     setAnalysisLoading(true)
     setAnalysisError(null)
     try {
-      const res = await fetch(`${API_URL}/api/v1/organizations/${id}/analyze`, {
+      const res = await fetch(`${API_URL}/api/v1/organizations/analyze-strategy/${id}`, {
         method: 'POST',
       })
 

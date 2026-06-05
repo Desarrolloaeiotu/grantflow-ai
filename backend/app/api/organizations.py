@@ -87,23 +87,7 @@ async def list_organizations(
     }
 
 
-@router.get("/{org_id}", response_model=OrganizationRead)
-async def get_organization(
-    org_id: str,
-    session: AsyncSession = Depends(get_db),
-) -> OrganizationRead:
-    """Get organization detail."""
-    stmt = select(Funder).where(Funder.id == org_id)
-    result = await session.execute(stmt)
-    org = result.scalar_one_or_none()
-
-    if not org:
-        raise HTTPException(status_code=404, detail="Organization not found")
-
-    return OrganizationRead.model_validate(org)
-
-
-@router.post("/{org_id}/analyze", response_model=dict)
+@router.post("/analyze-strategy/{org_id}", response_model=dict)
 async def analyze_organization(
     org_id: str,
     session: AsyncSession = Depends(get_db),
@@ -148,6 +132,22 @@ async def analyze_organization(
     except Exception as e:
         logger.error("Failed to generate analysis", org_id=org_id, error=str(e))
         raise HTTPException(status_code=500, detail="Could not generate analysis")
+
+
+@router.get("/{org_id}", response_model=OrganizationRead)
+async def get_organization(
+    org_id: str,
+    session: AsyncSession = Depends(get_db),
+) -> OrganizationRead:
+    """Get organization detail."""
+    stmt = select(Funder).where(Funder.id == org_id)
+    result = await session.execute(stmt)
+    org = result.scalar_one_or_none()
+
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    return OrganizationRead.model_validate(org)
 
 
 @router.post("", response_model=OrganizationRead, status_code=201)

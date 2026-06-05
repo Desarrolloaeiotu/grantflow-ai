@@ -39,36 +39,6 @@ class AnalysisResult(BaseModel):
         description="Primary strategic role for aeioTU",
     )
     confidence: Literal["high", "medium", "low"] = Field(
-        ...,
+        default="medium",
         description="Confidence level of the analysis",
     )
-
-    class Config:
-        """Pydantic config for validation."""
-
-        json_schema_extra = {
-            "example": {
-                "capital": {
-                    "text": "Provides grants $1-5M for education programs in Latin America",
-                    "conclusion": "Alto",
-                },
-                "model_export": {
-                    "text": "Interested in model scaling and replication across regions",
-                    "conclusion": "SÍ",
-                },
-                "network": {
-                    "text": "Well-articulated with multilateral organizations and governments",
-                    "conclusion": "SÍ (Alto)",
-                },
-                "colombia": {
-                    "text": "Active projects in Bogotá and Nariño with education focus",
-                    "conclusion": "Sí",
-                },
-                "latam": {
-                    "text": "Operates in Peru, Ecuador, Colombia with school education programs",
-                    "conclusion": "Prioridad",
-                },
-                "primary_role": "capital",
-                "confidence": "high",
-            }
-        }
