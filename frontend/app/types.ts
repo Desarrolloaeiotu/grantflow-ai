@@ -40,6 +40,7 @@ export interface Tender {
   decision: string | null
   status: string
   market_window: string | null
+  source_name: string | null
   detected_at: string
   updated_at: string
 }
@@ -56,7 +57,10 @@ export interface KeyContact {
   aeiotu_connection: boolean
   source: string
   fetched_at: string
+  priority_score?: number
 }
+
+export type Contact = KeyContact
 
 export interface ApiListResponse<T> {
   items: T[]
@@ -87,12 +91,16 @@ export function formatDate(dateStr: string | null | undefined): string {
   })
 }
 
-export function daysUntilDeadline(deadline: string | null | undefined): number | null {
+export function daysToDeadline(deadline: string | null | undefined): number | null {
   if (!deadline) return null
   const today = new Date()
   const deadlineDate = new Date(deadline)
   const diff = deadlineDate.getTime() - today.getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
+}
+
+export function daysUntilDeadline(deadline: string | null | undefined): number | null {
+  return daysToDeadline(deadline)
 }
 
 export function getUrgencyLabel(days: number | null): "URGENTE" | "PRÓXIMO" | "ABIERTO" {

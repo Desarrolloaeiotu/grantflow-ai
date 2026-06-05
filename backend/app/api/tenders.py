@@ -6,14 +6,14 @@ from typing import Optional
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, not_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models.funder import Funder
 from app.models.opportunity import Opportunity
-from app.schemas.tender import TenderCreate, TenderList, TenderRead
+from app.schemas.tender import TenderCreate, TenderListResponse, TenderRead
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -25,7 +25,7 @@ TENDER_MIN_AMOUNTS = {
 }
 
 
-@router.get("", response_model=TenderList)
+@router.get("", response_model=TenderListResponse)
 async def list_tenders(
     session: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
@@ -35,7 +35,7 @@ async def list_tenders(
     decision: Optional[str] = None,
     tender_type: Optional[str] = None,
     days_to_deadline: Optional[int] = None,
-) -> TenderList:
+) -> TenderListResponse:
     """List tenders with optional region filter.
 
     Query params:
@@ -64,8 +64,19 @@ async def list_tenders(
     ))
 
     # Region filter
+    nacional_sources = ["nacional_colombia", "secop", "manual_nacional"]
     if region == "nacional":
-        filters.append(Opportunity.source_name == "nacional_colombia")
+        # Include SECOP, nacional_colombia, and manual_nacional in nacional view
+        filters.append(Opportunity.source_name.in_(nacional_sources))
+    elif region == "global":
+        # Exclude nacional sources from global view
+        filters.append(
+            and_(
+                Opportunity.source_name != nacional_sources[0],
+                Opportunity.source_name != nacional_sources[1],
+                Opportunity.source_name != nacional_sources[2],
+            )
+        )
 
     # Additional filters
     if decision:
@@ -105,7 +116,7 @@ async def list_tenders(
             tender_data.funder_name = tender.funder.name
         items.append(tender_data)
 
-    return TenderList(
+    return TenderListResponse(
         items=items,
         total=total or 0,
         page=page,
@@ -164,9 +175,20 @@ async def export_tenders_csv(
     # Determine minimum amount based on region
     if region == "global":
         min_amount = TENDER_MIN_AMOUNTS["global"]
+        # Exclude nacional sources from global
+        filters.append(and_(
+            Opportunity.source_name != "nacional_colombia",
+            Opportunity.source_name != "secop",
+            Opportunity.source_name != "manual_nacional",
+        ))
     elif region == "nacional":
         min_amount = TENDER_MIN_AMOUNTS["nacional"]
-        filters.append(Opportunity.source_name == "nacional_colombia")
+        # Include nacional, SECOP, and manual_nacional
+        filters.append(or_(
+            Opportunity.source_name == "nacional_colombia",
+            Opportunity.source_name == "secop",
+            Opportunity.source_name == "manual_nacional",
+        ))
     else:
         min_amount = TENDER_MIN_AMOUNTS["nacional"]
 

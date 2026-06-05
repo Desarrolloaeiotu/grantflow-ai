@@ -339,169 +339,70 @@ class NacionalColombiaScraper(BaseScraper):
     async def _fetch_secop(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
         """Busca en SECOP (Sistema Electrónico de Contratación Pública).
 
-        SECOP es la fuente oficial de contratos públicos en Colombia.
-        Busca procesos abiertos de contratación en educación inicial.
-        Intenta primero SECOP 2.0 (nueva plataforma), luego SECOP 1.0 como fallback.
+        Usa datos.gov.co SECOP API con Socrata parameters ($where, $limit, $order).
         """
         items = []
 
-        # Búsqueda con múltiples términos para máxima cobertura
+        # Términos de búsqueda
         search_terms = [
-            "educación inicial",
-            "primera infancia",
-            "CDI",
-            "formación docente",
-            "desarrollo infantil",
-            "acompañamiento pedagógico",
-            "jardines infantiles",
-            "centro de desarrollo infantil",
-            "ludotecas",
-            "salas de lactancia",
-            "economía del cuidado",
-            "inclusión social infantil",
-            "retos de innovación educativa",
-            "tecnología educativa"
+            "educación inicial", "primera infancia", "CDI",
+            "formación docente", "desarrollo infantil",
+            "acompañamiento pedagógico", "jardines infantiles",
+            "centro de desarrollo infantil", "ludotecas",
+            "salas de lactancia", "economía del cuidado",
+            "inclusión social infantil", "cuidado infantil"
         ]
 
-        # Intentar SECOP 2.0 primero, luego SECOP 1.0 como fallback
-        api_endpoints = [
-            "https://www.secop2.gov.co/api/procesos",  # SECOP 2.0 (nueva plataforma)
-            "https://www.secop.gov.co/api/v2/procesos",  # SECOP 2.0 alternativa
-            "https://www.contratos.gov.co/api/v1/search"  # SECOP 1.0 (actual)
-        ]
+        # API endpoint (Socrata)
+        api_base = "https://www.datos.gov.co/resource/jbjy-vk9h.json"
 
-        # Intentar cada endpoint en orden
-        successful_endpoint = None
-        for api_base in api_endpoints:
-            endpoint_version = "2.0" if "v2" in api_base else "1.0"
-
-            for term in search_terms[:3]:  # Probar con 3 términos primero
-                try:
-                    # Parámetros según endpoint
-                    if "secop2" in api_base:
-                        params = {"busqueda": term, "limit": 50}
-                    else:
-                        params = {
-                            "q": term,
-                            "filter": "status:publicada" if "v1" in api_base else "estado:publicada",
-                            "size": 50,
-                            "desde": 0,
-                        }
-
-                    resp = await client.get(api_base, params=params, timeout=15)
-
-                    if resp.status_code == 200:
-                        try:
-                            data = resp.json()
-                            # Estructura es diferente según versión
-                            results = data.get("data", data.get("procesos", data.get("resultado", [])))
-
-                            if results:
-                                successful_endpoint = api_base
-                                logger.info("SECOP API working", version=endpoint_version, url=api_base)
-                                break
-                        except (json.JSONDecodeError, KeyError):
-                            pass
-                except httpx.HTTPError:
-                    pass
-
-            if successful_endpoint:
-                break
-
-        # Si no hay endpoint exitoso, usar fallback
-        if not successful_endpoint:
-            logger.debug("SECOP API not available, using HTML fallback")
-            for term in search_terms[:5]:
-                items.extend(await self._fetch_secop_web_fallback(client, term))
-            return items
-
-        # Buscar con todos los términos usando el endpoint exitoso
         for term in search_terms:
             try:
-                # Parámetros según endpoint
-                if "secop2" in successful_endpoint:
-                    params = {"busqueda": term, "limit": 50}
-                else:
-                    params = {
-                        "q": term,
-                        "filter": "status:publicada" if "v1" in successful_endpoint else "estado:publicada",
-                        "size": 50,
-                        "desde": 0,
-                    }
+                # Socrata SQL-like WHERE clause
+                where_clause = f"upper(objeto_del_contrato) like '%{term.upper()}%' OR upper(descripcion_del_proceso) like '%{term.upper()}%'"
+                params = {
+                    "$where": where_clause,
+                    "$limit": 100,
+                    "$order": "ultima_actualizacion DESC"
+                }
 
-                resp = await client.get(successful_endpoint, params=params, timeout=15)
-                resp.raise_for_status()
+                resp = await client.get(api_base, params=params, timeout=15)
 
-                try:
+                if resp.status_code == 200:
                     data = resp.json()
-                    # Parsear según versión
-                    if "secop2" in successful_endpoint:
-                        results = data.get("resultado", data.get("procesos", []))
-                        for result in results[:15]:
-                            title = result.get("nombreProceso", result.get("nombre", "")).strip()
-                            if not title or len(title) < 10:
+                    if isinstance(data, list) and len(data) > 0:
+                        logger.info("SECOP search", term=term, found=len(data))
+
+                        for result in data:
+                            title = result.get("objeto_del_contrato", result.get("descripcion_del_proceso", "")).strip()
+                            if not title or len(title) < 15:
                                 continue
 
-                            process_id = result.get("idProceso", result.get("id", ""))
-                            url = f"https://www.secop2.gov.co/detalles/{process_id}" if process_id else ""
+                            # Extraer URL
+                            url_dict = result.get("urlproceso", {})
+                            url = url_dict.get("url", "") if isinstance(url_dict, dict) else ""
+
+                            if not url or not url.startswith("http"):
+                                proceso_id = result.get("proceso_de_compra", "")
+                                if proceso_id:
+                                    url = f"https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID={proceso_id}"
+                                else:
+                                    continue
+
+                            funder = result.get("nombre_entidad", "Entidad pública colombiana").strip()
 
                             items.append({
-                                "title": title,
+                                "title": title[:300],
                                 "url": url,
                                 "source": "secop",
-                                "funder": "Entidad pública colombiana (SECOP 2.0)",
-                                "search_term": term,
-                                "deadline_text": result.get("fechaCierre", result.get("deadline", "")),
-                            })
-                    elif "v2" in successful_endpoint:
-                        results = data.get("procesos", [])
-                        for result in results[:15]:
-                            title = result.get("nombreProceso", "").strip()
-                            if not title or len(title) < 10:
-                                continue
-
-                            process_id = result.get("idProceso", "")
-                            url = f"https://www.secop.gov.co/portal/componentes/detalles/{process_id}" if process_id else ""
-
-                            items.append({
-                                "title": title,
-                                "url": url,
-                                "source": "secop",
-                                "funder": "Entidad pública colombiana (SECOP 2.0)",
-                                "search_term": term,
-                                "deadline_text": result.get("fechaCierre", ""),
-                            })
-                    else:
-                        # SECOP 1.0
-                        results = data.get("data", [])
-                        for result in results[:15]:
-                            title = result.get("procesosContratacion", [{}])[0].get("nombreProceso", "").strip()
-                            if not title or len(title) < 10:
-                                continue
-
-                            process_id = result.get("procesosContratacion", [{}])[0].get("id", "")
-                            url = f"https://www.contratos.gov.co/consultar/detalle/{process_id}" if process_id else ""
-
-                            items.append({
-                                "title": title,
-                                "url": url,
-                                "source": "secop",
-                                "funder": "Entidad pública colombiana (SECOP 1.0)",
-                                "search_term": term,
-                                "deadline_text": result.get("fechaCierre", ""),
+                                "funder": funder,
+                                "description": result.get("descripcion_del_proceso", ""),
                             })
 
-                    if len(items) > 0:
-                        logger.info("SECOP API search completed", term=term, results=len(items))
+            except (httpx.HTTPError, json.JSONDecodeError) as e:
+                logger.warning("SECOP fetch error", term=term, error=str(e)[:100])
 
-                except (json.JSONDecodeError, KeyError) as e:
-                    logger.debug("SECOP API response parse error", term=term, error=str(e)[:100])
-                    items.extend(await self._fetch_secop_web_fallback(client, term))
-
-            except httpx.HTTPError as exc:
-                logger.debug("SECOP API request failed", term=term, error=str(exc)[:100])
-                continue
-
+        logger.info("SECOP fetch complete", total=len(items))
         return items
 
     async def _fetch_secop_web_fallback(self, client: httpx.AsyncClient, term: str) -> list[dict[str, Any]]:
@@ -1285,6 +1186,17 @@ class NacionalColombiaScraper(BaseScraper):
         # Parse deadline si existe
         deadline = self._parse_deadline(raw.get("deadline_text"))
 
+        # Filtro: solo convocatorias posteriores a 01/06/2026
+        # (pero permitir items sin deadline, ej: SECOP sin cierre específico)
+        cutoff_date = date(2026, 6, 1)
+        if deadline and deadline <= cutoff_date:
+            logger.debug("Nacional opp rejected", title=title[:60], reason=f"deadline_before_cutoff({deadline})")
+            return None
+
+        # Detect sub-source for SECOP vs other sources
+        sub_source = raw.get("source", "nacional_colombia")
+        source_name = "secop" if sub_source == "secop" else "nacional_colombia"
+
         return OpportunityCreate(
             title=title,
             description=description[:2000] or None,
@@ -1292,7 +1204,7 @@ class NacionalColombiaScraper(BaseScraper):
             deadline=deadline,
             url_rfp=url,
             url_source=url,
-            source_name=self.source_name,
+            source_name=source_name,
             org_website=raw.get("funder_url", ""),
             eligible_countries=["Colombia"],
             sectors=["educacion_inicial", "primera_infancia"],

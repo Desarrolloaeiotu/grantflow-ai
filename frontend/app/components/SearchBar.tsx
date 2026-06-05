@@ -11,11 +11,11 @@ export default function SearchBar({ placeholder = 'Buscar por título o descripc
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [query, setQuery] = useState(searchParams.get('q') ?? '')
+  const [query, setQuery] = useState(searchParams?.get('q') ?? '')
   const [isPending, startTransition] = useTransition()
 
   function applySearch(newQuery: string) {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams?.toString() ?? '')
     if (newQuery.trim()) {
       params.set('q', newQuery.trim())
     } else {

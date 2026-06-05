@@ -10,7 +10,7 @@ interface OpportunitiesSidebarProps {
 
 export default function OpportunitiesSidebar({ metrics }: OpportunitiesSidebarProps) {
   const searchParams = useSearchParams()
-  const activeSection = searchParams.get('section') || 'radar'
+  const activeSection = searchParams?.get('section') || 'radar'
 
   const sections = [
     { id: 'alertas', label: 'Alertas', icon: '🔔' },

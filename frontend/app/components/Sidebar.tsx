@@ -43,14 +43,18 @@ const NAV_STRUCTURE = [
     isSection: true,
   },
   {
-    id: 'nacional-radar',
-    label: 'Oportunidades (Radar)',
-    href: '/nacional',
-    icon: '◎',
-    subsections: [
-      { label: 'Alertas', href: '/nacional?section=alertas', icon: '!' },
-      { label: 'Pipeline', href: '/nacional?section=pipeline', icon: '▱' },
-    ],
+    id: 'nacional-home',
+    label: 'Módulo Colombia',
+    href: '/nacional/home',
+    icon: '🇨🇴',
+    subsections: [],
+  },
+  {
+    id: 'nacional-organizations',
+    label: 'Organizaciones',
+    href: '/nacional/organizations',
+    icon: '◆',
+    subsections: [],
   },
   {
     id: 'nacional-convocatorias',
@@ -98,7 +102,7 @@ export default function Sidebar() {
             <div key={item.id}>
               <Link
                 href={item.href}
-                className={`nav-item ${pathname === item.href || pathname.startsWith(item.href + '?') ? 'active' : ''}`}
+                className={`nav-item ${pathname === item.href || pathname?.startsWith(item.href + '?') ? 'active' : ''}`}
               >
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}

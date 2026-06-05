@@ -80,7 +80,7 @@ export default function GlobalTendersPage() {
     }
   }
 
-  const daysToDeadline = (deadline: string | undefined): number | null => {
+  const daysToDeadline = (deadline: string | null | undefined): number | null => {
     if (!deadline) return null
     const d = new Date(deadline)
     const today = new Date()
@@ -88,7 +88,7 @@ export default function GlobalTendersPage() {
     return Math.ceil(diff / (1000 * 3600 * 24))
   }
 
-  const formatCOP = (amount: number | undefined): string => {
+  const formatCOP = (amount: number | null | undefined): string => {
     if (!amount) return "—"
     if (amount >= 1_000_000_000) return `$${(amount / 1_000_000_000).toFixed(1)}B`
     if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(0)}M`

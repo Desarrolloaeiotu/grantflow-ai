@@ -30,6 +30,13 @@ class Funder(Base):
     aeiotu_role: Mapped[str | None] = mapped_column(Text)  # financiador|aliado|escalador|visibilidad
     general_objective: Mapped[str | None] = mapped_column(Text)
 
+    # ── GLOBAL module extended fields ────────────────────────────────────────
+    linkedin_url: Mapped[str | None] = mapped_column(Text)
+    min_grant_cop: Mapped[int | None] = mapped_column()  # BigInteger
+    max_grant_cop: Mapped[int | None] = mapped_column()  # BigInteger
+    last_scraped_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    verified_data: Mapped[bool] = mapped_column(Boolean, default=False)
+
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

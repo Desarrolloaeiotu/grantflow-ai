@@ -24,6 +24,8 @@ router = APIRouter()
 async def list_contacts(
     funder_id: uuid.UUID | None = Query(None),
     role_category: Optional[str] = None,
+    country: Optional[str] = None,
+    search: Optional[str] = None,
     page: int = Query(1, ge=1),
     size: int = Query(25, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -33,21 +35,39 @@ async def list_contacts(
     Query params:
     - funder_id: Filter by organization ID
     - role_category: partnerships | grants | cooperation | innovation | development
+    - country: Filter by funder country (e.g., 'Colombia')
+    - search: Search by name, title, or organization
     """
     filters = []
     if funder_id:
         filters.append(Contact.funder_id == funder_id)
     if role_category:
         filters.append(Contact.role_category == role_category)
+    if country:
+        # Join with Funder to filter by country
+        filters.append(Funder.country == country)
+    if search:
+        search_term = f"%{search.lower()}%"
+        filters.append(
+            or_(
+                func.lower(Contact.full_name).ilike(search_term),
+                func.lower(Contact.title).ilike(search_term),
+                func.lower(Contact.last_name).ilike(search_term),
+            )
+        )
 
     # Get total count
     count_q = select(func.count(Contact.id))
+    if country:
+        count_q = count_q.join(Funder)
     if filters:
         count_q = count_q.where(and_(*filters))
     total = (await db.execute(count_q)).scalar() or 0
 
-    # Get paginated results with funder relationship
-    q = select(Contact).options(selectinload(Contact.funder))
+    # Get paginated results
+    q = select(Contact)
+    if country:
+        q = q.join(Funder)
     if filters:
         q = q.where(and_(*filters))
     q = q.offset((page - 1) * size).limit(size).order_by(Contact.fetched_at.desc())
@@ -154,7 +174,7 @@ async def enrich_contacts(
 async def export_contacts_csv(
     session: AsyncSession = Depends(get_db),
     role_category: Optional[str] = None,
-    region: Optional[str] = None,  # colombia | global
+    country: Optional[str] = None,
 ) -> dict:
     """Export contacts to CSV.
 
@@ -162,14 +182,18 @@ async def export_contacts_csv(
 
     Query params:
     - role_category: Filter by role (partnerships, grants, cooperation, innovation, development)
-    - region: 'colombia' for national contacts | 'global' for international | None for all
+    - country: Filter by funder country (e.g., 'Colombia')
     """
     filters = []
 
     if role_category:
         filters.append(Contact.role_category == role_category)
+    if country:
+        filters.append(Funder.country == country)
 
     stmt = select(Contact)
+    if country:
+        stmt = stmt.join(Funder)
     if filters:
         stmt = stmt.where(and_(*filters))
     stmt = stmt.options(selectinload(Contact.funder)).order_by(Contact.fetched_at.desc())
@@ -209,6 +233,6 @@ async def export_contacts_csv(
     csv_b64 = base64.b64encode(csv_content.encode()).decode()
 
     return {
-        "filename": f"contacts_{region or 'all'}.csv",
+        "filename": f"contacts_{country or 'all'}.csv",
         "content_base64": csv_b64,
     }

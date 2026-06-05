@@ -1,9 +1,67 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Tender, ApiListResponse, formatCOP, formatDate, daysUntilDeadline, getUrgencyLabel, getUrgencyColor } from "@/app/types"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+
+function ScoreBadge({ score }: { score: number | null }) {
+  if (!score) return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '50px',
+      height: '50px',
+      borderRadius: '4px',
+      background: 'var(--bg2)',
+      fontSize: '10px',
+      color: 'var(--muted)',
+      fontWeight: 600,
+      textAlign: 'center',
+      lineHeight: 1.2
+    }}>
+      Sin<br/>score
+    </div>
+  )
+
+  const max = 10
+  const percent = (score / max) * 100
+  const color = score >= 6 ? 'var(--go)' : score >= 4 ? '#ff9800' : 'var(--nogo)'
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '50px',
+      height: '50px',
+      borderRadius: '4px',
+      background: 'var(--bg2)',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: color,
+        opacity: 0.1
+      }} />
+      <div style={{
+        fontSize: '16px',
+        fontWeight: 700,
+        color,
+        fontFamily: 'monospace',
+        zIndex: 1
+      }}>
+        {score}/{max}
+      </div>
+    </div>
+  )
+}
 
 export default function ConvocatoriasGlobalPage() {
   const [tenders, setTenders] = useState<Tender[]>([])
@@ -28,12 +86,16 @@ export default function ConvocatoriasGlobalPage() {
       if (decision) params.append("decision", decision)
 
       const res = await fetch(`${API_URL}/api/v1/tenders?${params}`)
+      if (!res.ok) throw new Error(`API error: ${res.status}`)
+
       const data: ApiListResponse<Tender> = await res.json()
 
-      setTenders(data.items)
-      setTotal(data.total)
+      setTenders(data.items || [])
+      setTotal(data.total || 0)
     } catch (error) {
       console.error("Error fetching tenders:", error)
+      setTenders([])
+      setTotal(0)
     } finally {
       setLoading(false)
     }
@@ -100,90 +162,91 @@ export default function ConvocatoriasGlobalPage() {
         <div className="empty-state">No hay convocatorias que cumplan los criterios</div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px', marginBottom: '24px' }}>
-            {tenders.map((tender) => {
+          <style>{`
+            .tender-card {
+              transition: all 0.2s;
+            }
+            .tender-card:hover {
+              background: var(--bg2);
+              border-color: var(--border2);
+            }
+          `}</style>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+            {tenders.map((tender, idx) => {
               const daysLeft = daysUntilDeadline(tender.deadline)
-              const urgency = getUrgencyLabel(daysLeft)
 
               return (
-                <div key={tender.id} className="opp-card go-card">
-                  <div className="opp-top">
-                    <div>
-                      <h3 className="opp-title">{tender.title}</h3>
-                      <p style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>
-                        <strong>{tender.funder_name || "—"}</strong>
-                      </p>
+                <Link href={`/convocatorias/${tender.id}`} key={tender.id} style={{ textDecoration: 'none' }}>
+                  <div className="tender-card" style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--r)',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  }}>
+                    {/* Score Badge - Top */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 4px 0', color: 'var(--text)' }}>
+                          {tender.title}
+                        </h3>
+                        <p style={{ fontSize: '11px', color: 'var(--muted)', margin: 0 }}>
+                          {tender.funder_name}
+                        </p>
+                      </div>
+                      <ScoreBadge score={tender.score_total} />
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                      {tender.decision === 'go' && <span className="badge-go">✓ GO</span>}
-                      {tender.decision === 'no_go' && <span className="badge-nogo">✗ NO GO</span>}
-                      {tender.decision === 'pending' && <span className="badge-warn">⏳ PENDING</span>}
-                      {tender.deadline && (
-                        <span className={daysLeft && daysLeft <= 7 ? 'badge-nogo' : daysLeft && daysLeft <= 15 ? 'badge-warn' : 'badge-muted'}>
-                          {urgency}
-                        </span>
-                      )}
+
+                    {/* Metadata Grid */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '8px',
+                      fontSize: '11px',
+                      borderTop: '1px solid var(--border)',
+                      borderBottom: '1px solid var(--border)',
+                      paddingTop: '8px',
+                      paddingBottom: '8px'
+                    }}>
+                      <div>
+                        <div style={{ color: 'var(--muted)', fontWeight: 600, marginBottom: '2px' }}>Monto Máx</div>
+                        <div style={{ color: 'var(--text)', fontWeight: 700 }}>
+                          {tender.amount_max_cop ? formatCOP(tender.amount_max_cop) : "—"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: 'var(--muted)', fontWeight: 600, marginBottom: '2px' }}>Cierre</div>
+                        <div style={{ color: 'var(--text)', fontWeight: 700 }}>
+                          {formatDate(tender.deadline) || "—"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: 'var(--muted)', fontWeight: 600, marginBottom: '2px' }}>Días</div>
+                        <div style={{ color: daysLeft && daysLeft <= 7 ? 'var(--nogo)' : 'var(--text)', fontWeight: 700 }}>
+                          {daysLeft !== null ? daysLeft + 'd' : "—"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: 'var(--muted)', fontWeight: 600, marginBottom: '2px' }}>Fuente</div>
+                        <div style={{ color: 'var(--text)', fontWeight: 700 }}>
+                          {tender.source_name === 'secop' ? '🏛️ SECOP' : '📰 Noticia'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Badges */}
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {tender.source_name === 'secop' && <span className="badge-go" style={{ fontSize: '10px', padding: '4px 6px', background: '#e3f2fd', color: '#1976d2', border: '1px solid #1976d2' }}>SECOP</span>}
+                      {tender.decision === 'go' && <span className="badge-go" style={{ fontSize: '10px', padding: '4px 6px' }}>✓ GO</span>}
+                      {tender.decision === 'no_go' && <span className="badge-nogo" style={{ fontSize: '10px', padding: '4px 6px' }}>✗ NO GO</span>}
+                      {tender.decision === 'pending' && <span className="badge-warn" style={{ fontSize: '10px', padding: '4px 6px' }}>⏳ PENDING</span>}
+                      {daysLeft && daysLeft <= 7 && <span className="badge-nogo" style={{ fontSize: '10px', padding: '4px 6px' }}>URGENTE</span>}
                     </div>
                   </div>
-
-                  <div className="opp-meta" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', margin: '12px 0' }}>
-                    <div>
-                      <div className="kpi-label">Monto máximo</div>
-                      <div className="opp-amount">{formatCOP(tender.amount_max_cop)}</div>
-                    </div>
-                    <div>
-                      <div className="kpi-label">Apertura</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: 500 }}>{formatDate(tender.open_date) || "—"}</div>
-                    </div>
-                    <div>
-                      <div className="kpi-label">Cierre</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: 500 }}>{formatDate(tender.deadline) || "—"}</div>
-                    </div>
-                    <div>
-                      <div className="kpi-label">Días restantes</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text)', fontWeight: 500 }}>{daysLeft !== null ? daysLeft + 'd' : "—"}</div>
-                    </div>
-                  </div>
-
-                  {tender.description && (
-                    <p style={{ fontSize: '12px', color: 'var(--muted2)', lineHeight: 1.5, marginBottom: '12px', borderLeft: '2px solid var(--border2)', paddingLeft: '10px' }}>
-                      {tender.description.length > 150 ? tender.description.slice(0, 150) + '...' : tender.description}
-                    </p>
-                  )}
-
-                  <div className="opp-links">
-                    {tender.url_rfp && (
-                      <a
-                        href={tender.url_rfp}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="link-btn"
-                      >
-                        📄 RFP
-                      </a>
-                    )}
-                    {tender.url_tor && (
-                      <a
-                        href={tender.url_tor}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="link-btn"
-                      >
-                        📋 ToR
-                      </a>
-                    )}
-                    {tender.url_form && (
-                      <a
-                        href={tender.url_form}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="link-btn"
-                      >
-                        ✍️ Formulario
-                      </a>
-                    )}
-                  </div>
-                </div>
+                </Link>
               )
             })}
           </div>

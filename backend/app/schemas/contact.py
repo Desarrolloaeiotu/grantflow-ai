@@ -18,6 +18,14 @@ class ContactRead(BaseModel):
     source: str
     role_category: str | None = None  # partnerships | grants | cooperation | innovation | development
     opportunity_id: uuid.UUID | None = None
+
+    # GLOBAL module fields
+    priority_score: int | None = None  # 1-5
+    department: str | None = None
+    verified_email_apollo: bool = False
+    social_profiles: dict | None = None
+    last_verified_at: datetime | None = None
+
     fetched_at: datetime
 
 

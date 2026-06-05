@@ -41,7 +41,22 @@
       "PowerShell(\"Stopped Python processes\")",
       "Bash(curl -s \"http://localhost:8000/health\")",
       "Bash(curl -s \"http://localhost:8000/api/v1/opportunities?source=nacional_colombia&window=funding_colombia&size=10\")",
-      "Bash(curl -s \"http://localhost:8000/api/v1/opportunities?source=nacional_colombia&size=10\")"
+      "Bash(curl -s \"http://localhost:8000/api/v1/opportunities?source=nacional_colombia&size=10\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/contacts?page=1&size=1\")",
+      "Bash(xargs grep -l \"ApiListResponse\")",
+      "Bash(pkill -f \"uvicorn\")",
+      "Bash(python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/contacts?page=1&size=5\")",
+      "Bash(curl -s \"http://localhost:8000/api/v1/organizations?limit=1\")",
+      "PowerShell(Get-Process | Where-Object {$_.CommandLine -match \"uvicorn\"} | Stop-Process -Force)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, @{Name='Memory \\(MB\\)'; Expression={[math]::Round\\($_.WorkingSet/1MB, 2\\)}} | Format-Table)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(npm run *)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue)",
+      "Bash(uvicorn main:app --reload)",
+      "Bash(curl -s -i 'http://localhost:8000/api/v1/tenders?region=nacional&size=1' -H \"Origin: http://localhost:3005\")",
+      "Bash(python -c \"import sys, json; d = json.load\\(sys.stdin\\); print\\(f'Total: {d[\\\\\"total\\\\\"]}, Items: {len\\(d[\\\\\"items\\\\\"]\\)}, First: {d[\\\\\"items\\\\\"][0][\\\\\"title\\\\\"][:40]}'\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\Luis Mendez\\.claude\\projects\\c--Users-Luis-Mendez-OneDrive---Fundaci-n-Carulla---Aeiotu-Escritorio-Grantflow-app\\memory"

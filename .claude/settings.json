@@ -108,16 +108,56 @@
       "Bash(curl -s -X POST \"http://localhost:8000/api/v1/scrape/run\" -H \"X-API-Key: test-api-key-123456\")",
       "Bash(pkill -f \"node\")",
       "PowerShell(Get-Process node -ErrorAction SilentlyContinue)",
-      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)"
+      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)",
+      "Bash(python -m pytest tests/test_scrapers_selectors.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_scrapers_selectors.py -v)",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); from tests import test_scrapers_selectors; print\\('✅ test_scrapers_selectors.py imports successfully'\\)\")",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); from tests import test_scrapers_selectors; print\\('✅ test_scrapers_selectors.py syntax OK'\\); import inspect; tests = [name for name, obj in inspect.getmembers\\(test_scrapers_selectors\\) if name.startswith\\('test_'\\)]; print\\(f'Found {len\\(tests\\)} tests'\\); [print\\(f'  - {t}'\\) for t in sorted\\(tests\\)]\")",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, '.'\\); from tests import test_scrapers_selectors; import inspect; tests = [name for name, obj in inspect.getmembers\\(test_scrapers_selectors\\) if name.startswith\\('test_'\\)]; print\\('test_scrapers_selectors.py syntax OK'\\); print\\('Found', len\\(tests\\), 'tests'\\); [print\\('  -', t\\) for t in sorted\\(tests\\)]\")",
+      "Bash(python3 -m py_compile app/scrapers/nacional_colombia.py)",
+      "Bash(make scrape *)",
+      "Bash(python -c \"from app.scrapers.nacional_colombia import NacionalColombiaScraper; import asyncio; s = NacionalColombiaScraper\\(\\); opportunities = asyncio.run\\(s.run\\(\\)\\); opp = next\\(\\(o for o in opportunities if 'Cero a Siempre' in o.title\\), None\\); print\\(f'Title: {opp.title if opp else \\\\\"Not found\\\\\"}'\\); print\\(f'Amount: {opp.amount_max_cop if opp else \\\\\"N/A\\\\\"}'\\); print\\(f'Deadline: {opp.deadline if opp else \\\\\"N/A\\\\\"}'\\); print\\(f'Funder: {opp.funder_name if opp else \\\\\"N/A\\\\\"}'\\)\")",
+      "Bash(timeout 60 python -c ' *)",
+      "Bash(python -m pytest tests/test_api.py::test_list_opportunities -xvs)",
+      "Bash(curl -s http://localhost:8000/api/v1/tenders?size=1)",
+      "Bash(curl -s http://localhost:8000/api/v1/organizations?size=1)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3007 -ErrorAction SilentlyContinue)",
+      "PowerShell($process = Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -eq 'node' } | Select-Object -First 1; if \\($process\\) { $process | Stop-Process -Force; Write-Host \"Killed node process \\(PID: $\\($process.Id\\)\\)\"; Start-Sleep -Milliseconds 1000 } else { Write-Host \"No node process found\" })",
+      "Bash(curl -s http://localhost:8000/api/v1/tenders?region=nacional\\\\&size=5)",
+      "Bash(curl -s \"http://localhost:8000/api/v1/tenders?size=20\")",
+      "Bash(python3 -m json.tool)",
+      "PowerShell($response = Invoke-RestMethod -Uri \"http://localhost:8000/api/v1/tenders?size=20\" -Method Get; $response.items | ForEach-Object { [PSCustomObject]@{title=$_.title; source=$_.source_name} } | ConvertTo-Json)",
+      "PowerShell(Get-Process | Where-Object { $_.Name -eq \"python\" } | Select-Object Id, Name, CommandLine | Format-Table)",
+      "Bash(uvicorn main:app --reload --port 8000)",
+      "PowerShell(Get-Process python -ErrorAction SilentlyContinue)",
+      "Bash([ -f \"c:/Users/Luis Mendez/OneDrive - Fundación Carulla - Aeiotu/Escritorio/Grantflow app/frontend/app/$dir/page.tsx\" ])",
+      "PowerShell(Stop-Process -Force)",
+      "Bash(mkdir -p \"c:/Users/Luis Mendez/OneDrive - Fundación Carulla - Aeiotu/Escritorio/Grantflow app/frontend/app/nacional/convocatorias/\\\\[id\\\\]\")",
+      "Bash(mkdir -p \"c:/Users/Luis Mendez/OneDrive - Fundación Carulla - Aeiotu/Escritorio/Grantflow app/frontend/app/global/organizations/\\\\[id\\\\]\")",
+      "Bash(mkdir -p \"c:/Users/Luis Mendez/OneDrive - Fundación Carulla - Aeiotu/Escritorio/Grantflow app/frontend/app/global/tenders/\\\\[id\\\\]\")",
+      "Bash(.venv\\\\Scripts\\\\python)",
+      "Bash(python -m py_compile backend/app/services/analysis_service.py)",
+      "Bash(python -m py_compile backend/app/schemas/analysis.py)",
+      "Bash(python -m py_compile backend/app/core/config.py)",
+      "Bash(grep -v \"nacional\\\\|global\\\\|Nacional\\\\|Global\\\\|<!--\\\\|{/\\\\*\")",
+      "Bash(python test_analysis_service.py)",
+      "Bash(python -m py_compile backend/app/api/organizations.py)",
+      "Bash(python test_final_analysis.py)",
+      "Bash(python -m py_compile backend/app/services/analysis_service.py backend/app/schemas/analysis.py backend/app/core/config.py backend/app/api/organizations.py)",
+      "Bash(git diff *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Luis Mendez\\OneDrive - Fundaci�n Carulla - Aeiotu\\Escritorio\\Grantflow app\\frontend\\app\\nacional",
       "\\tmp",
-      "C:\\Users\\Luis Mendez\\OneDrive - Fundaci�n Carulla - Aeiotu\\Escritorio\\Grantflow app\\frontend"
+      "C:\\Users\\Luis Mendez\\OneDrive - Fundaci�n Carulla - Aeiotu\\Escritorio\\Grantflow app\\frontend",
+      "c:\\Users\\Luis Mendez\\OneDrive - Fundación Carulla - Aeiotu\\Escritorio\\Grantflow app\\frontend\\app\\nacional\\convocatorias\\[id",
+      "c:\\Users\\Luis Mendez\\OneDrive - Fundaci�n Carulla - Aeiotu\\Escritorio\\Grantflow app\\frontend\\app\\global\\organizations"
     ]
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true
+    "superpowers@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "context7@claude-plugins-official": true
   }
 }

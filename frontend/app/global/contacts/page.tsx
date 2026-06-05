@@ -1,33 +1,30 @@
-﻿'use client'
+'use client'
 
-import { useState, useEffect } from 'react'
-import { Contact, ApiListResponse } from '@/app/types'
+import { useState, useEffect } from "react"
+import { Contact, ApiListResponse } from "@/app/types"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-export default function NacionalContactsPage() {
+export default function GlobalContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState('')
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
     fetchContacts()
-  }, [page, search, roleFilter])
+  }, [page, search])
 
   async function fetchContacts() {
     setLoading(true)
     try {
       const params = new URLSearchParams({
-        country: 'Colombia',
         page: page.toString(),
-        size: '25',
+        size: "25",
       })
 
-      if (search) params.append('search', search)
-      if (roleFilter) params.append('role_category', roleFilter)
+      if (search) params.append("search", search)
 
       const res = await fetch(`${API_URL}/api/v1/contacts?${params}`)
       const data: ApiListResponse<Contact> = await res.json()
@@ -35,7 +32,7 @@ export default function NacionalContactsPage() {
       setContacts(data.items)
       setTotal(data.total)
     } catch (error) {
-      console.error('Error fetching contacts:', error)
+      console.error("Error fetching contacts:", error)
     } finally {
       setLoading(false)
     }
@@ -43,44 +40,44 @@ export default function NacionalContactsPage() {
 
   async function handleExport() {
     try {
-      const res = await fetch(`${API_URL}/api/v1/contacts/export?country=Colombia`)
+      const res = await fetch(`${API_URL}/api/v1/contacts/export`)
       const data = await res.json()
       const csv = atob(data.content_base64)
-      const blob = new Blob([csv], { type: 'text/csv' })
+      const blob = new Blob([csv], { type: "text/csv" })
       const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
+      const a = document.createElement("a")
       a.href = url
       a.download = data.filename
       a.click()
     } catch (error) {
-      console.error('Error exporting:', error)
+      console.error("Error exporting:", error)
     }
   }
 
   const getRoleColor = (category: string | undefined): string => {
     switch (category) {
-      case 'partnerships': return '#4CAF50'
-      case 'grants': return '#2196F3'
-      case 'cooperation': return '#FF9800'
-      case 'innovation': return '#9C27B0'
-      case 'development': return '#F44336'
-      default: return 'var(--muted)'
+      case "partnerships": return "#4CAF50"
+      case "grants": return "#2196F3"
+      case "cooperation": return "#FF9800"
+      case "innovation": return "#9C27B0"
+      case "development": return "#F44336"
+      default: return "var(--muted)"
     }
   }
 
   return (
     <div className="page">
       <div className="section-hd" style={{ marginBottom: '20px' }}>
-        <h2>Contactos Clave NACIONAL</h2>
+        <h2>Contactos Clave GLOBAL</h2>
         <p style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '4px' }}>
-          {total} funcionarios, coordinadores y gerentes en organizaciones públicas y privadas colombianas
+          {total} profesionales en roles estratégicos (partnerships, grants, cooperación, innovación)
         </p>
       </div>
 
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
         <input
           type="text"
-          placeholder="Buscar por nombre, cargo, organización..."
+          placeholder="Buscar por nombre, organización, cargo..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value)
@@ -96,28 +93,6 @@ export default function NacionalContactsPage() {
             minWidth: '200px',
           }}
         />
-
-        <select
-          value={roleFilter}
-          onChange={(e) => {
-            setRoleFilter(e.target.value)
-            setPage(1)
-          }}
-          style={{
-            padding: '8px 12px',
-            fontSize: '13px',
-            border: '1px solid var(--border)',
-            borderRadius: '4px',
-            backgroundColor: 'var(--bg)',
-          }}
-        >
-          <option value="">Todos los roles</option>
-          <option value="grants">Grants / Financiamiento</option>
-          <option value="partnerships">Partnerships / Alianzas</option>
-          <option value="cooperation">Cooperation / Cooperación</option>
-          <option value="development">Development / Desarrollo</option>
-          <option value="innovation">Innovation / Innovación</option>
-        </select>
 
         <button
           onClick={handleExport}
@@ -150,10 +125,10 @@ export default function NacionalContactsPage() {
                 {contacts.map((contact) => (
                   <tr key={contact.id}>
                     <td style={{ fontWeight: 500 }}>
-                      {contact.full_name} {contact.last_name || ''}
+                      {contact.full_name} {contact.last_name}
                     </td>
                     <td className="td-muted" style={{ fontSize: '12px' }}>
-                      {contact.title || '—'}
+                      {contact.title || "—"}
                     </td>
                     <td>
                       {contact.role_category ? (
@@ -172,7 +147,7 @@ export default function NacionalContactsPage() {
                       )}
                     </td>
                     <td className="td-muted" style={{ fontSize: '12px' }}>
-                      {contact.funder_name || '—'}
+                      {contact.funder_name || "—"}
                     </td>
                     <td className="td-link" style={{ fontSize: '12px' }}>
                       {contact.email ? (
@@ -180,7 +155,7 @@ export default function NacionalContactsPage() {
                           {contact.email}
                         </a>
                       ) : (
-                        '—'
+                        "—"
                       )}
                     </td>
                     <td style={{ fontSize: '12px' }}>
@@ -189,16 +164,16 @@ export default function NacionalContactsPage() {
                           Perfil →
                         </a>
                       ) : (
-                        '—'
+                        "—"
                       )}
                     </td>
                     <td style={{ textAlign: 'center', fontSize: '12px' }}>
                       {contact.priority_score ? (
                         <span style={{ color: 'var(--go)', fontWeight: 600 }}>
-                          {'★'.repeat(contact.priority_score)}
+                          {"★".repeat(contact.priority_score)}
                         </span>
                       ) : (
-                        '—'
+                        "—"
                       )}
                     </td>
                   </tr>

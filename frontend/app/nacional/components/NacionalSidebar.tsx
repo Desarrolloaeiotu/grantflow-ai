@@ -16,7 +16,7 @@ export default function NacionalSidebar({
   alertCount,
 }: NacionalSidebarProps) {
   const searchParams = useSearchParams()
-  const activeSection = searchParams.get('section') || 'radar'
+  const activeSection = searchParams?.get('section') || 'radar'
 
   const sections = [
     {
@@ -28,13 +28,13 @@ export default function NacionalSidebar({
     {
       id: 'radar',
       label: 'Radar',
-      badge: metrics.detected,
+      badge: metrics.detected ?? 0,
       icon: '📊',
     },
     {
       id: 'pipeline',
       label: 'Pipeline',
-      badge: metrics.in_crm,
+      badge: metrics.in_crm ?? 0,
       icon: '📋',
     },
     {

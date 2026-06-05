@@ -23,55 +23,79 @@ export async function getOportunidadesNacionales(
     sector?: string
   }
 ): Promise<Opportunity[]> {
-  const params = new URLSearchParams()
-  params.append('window', 'funding_colombia')
+  try {
+    const params = new URLSearchParams()
+    params.append('window', 'funding_colombia')
 
-  if (filters?.estado) params.append('status', filters.estado)
-  if (filters?.urgencia) params.append('urgency', filters.urgencia)
-  // Note: financiador and sector filtering happens on frontend for now
+    if (filters?.estado) params.append('status', filters.estado)
+    if (filters?.urgencia) params.append('urgency', filters.urgencia)
+    // Note: financiador and sector filtering happens on frontend for now
 
-  const res = await fetch(`${API_URL}/api/v1/opportunities?${params.toString()}`, {
-    cache: 'no-store', // Always fresh data for Server Components
-    headers: getFetchHeaders(),
-  })
+    const res = await fetch(`${API_URL}/api/v1/opportunities?${params.toString()}`, {
+      cache: 'no-store', // Always fresh data for Server Components
+      headers: getFetchHeaders(),
+    })
 
-  if (!res.ok) throw new Error('Failed to fetch opportunities')
-  const data = await res.json()
-  return data.items || []
+    if (!res.ok) throw new Error('Failed to fetch opportunities')
+    const data = await res.json()
+    return data.items || []
+  } catch (error) {
+    console.error('Error fetching opportunities:', error)
+    return []
+  }
 }
 
 // Fetch dashboard metrics for national opportunities
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
-  const res = await fetch(`${API_URL}/api/v1/dashboard/metrics?region=colombia`, {
-    cache: 'no-store',
-    headers: getFetchHeaders(),
-  })
+  try {
+    const res = await fetch(`${API_URL}/api/v1/dashboard/metrics`, {
+      cache: 'no-store',
+      headers: getFetchHeaders(),
+    })
 
-  if (!res.ok) throw new Error('Failed to fetch metrics')
-  return res.json()
+    if (!res.ok) throw new Error('Failed to fetch metrics')
+    return res.json()
+  } catch (error) {
+    console.error('Error fetching metrics:', error)
+    return { total: 0, go: 0, no_go: 0, pending: 0, high_urgency: 0, medium_urgency: 0, low_urgency: 0 }
+  }
 }
 
 // Fetch contacts for national funders
 export async function getContactosNacionales(): Promise<Contact[]> {
-  const res = await fetch(`${API_URL}/api/v1/contacts?region=colombia`, {
-    cache: 'no-store',
-    headers: getFetchHeaders(),
-  })
+  try {
+    const res = await fetch(`${API_URL}/api/v1/contacts`, {
+      cache: 'no-store',
+      headers: getFetchHeaders(),
+      signal: AbortSignal.timeout(5000),
+    })
 
-  if (!res.ok) throw new Error('Failed to fetch contacts')
-  const data = await res.json()
-  return data.contacts || []
+    if (!res.ok) {
+      console.warn(`Contacts endpoint returned ${res.status}`)
+      return []
+    }
+    const data = await res.json()
+    return Array.isArray(data) ? data : (data.items || data.contacts || [])
+  } catch (error) {
+    console.error('Error fetching contacts:', error instanceof Error ? error.message : error)
+    return []
+  }
 }
 
 // Fetch a single opportunity by ID
 export async function getOportunidad(id: string): Promise<Opportunity> {
-  const res = await fetch(`${API_URL}/api/v1/opportunities/${id}`, {
-    cache: 'no-store',
-    headers: getFetchHeaders(),
-  })
+  try {
+    const res = await fetch(`${API_URL}/api/v1/opportunities/${id}`, {
+      cache: 'no-store',
+      headers: getFetchHeaders(),
+    })
 
-  if (!res.ok) throw new Error(`Failed to fetch opportunity ${id}`)
-  return res.json()
+    if (!res.ok) throw new Error(`Failed to fetch opportunity ${id}`)
+    return res.json()
+  } catch (error) {
+    console.error(`Error fetching opportunity ${id}:`, error)
+    throw error
+  }
 }
 
 // Helper: calculate alerts from opportunities

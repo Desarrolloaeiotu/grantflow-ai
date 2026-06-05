@@ -70,8 +70,15 @@ export interface FilterState {
 }
 
 export interface DashboardMetrics {
-  detected: number
-  reviewed: number
-  in_crm: number
-  cerrada: number
+  total?: number
+  detected?: number
+  reviewed?: number
+  in_crm?: number
+  cerrada?: number
+  go?: number
+  no_go?: number
+  pending?: number
+  high_urgency?: number
+  medium_urgency?: number
+  low_urgency?: number
 }

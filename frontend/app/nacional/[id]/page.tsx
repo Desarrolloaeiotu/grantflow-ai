@@ -29,6 +29,13 @@ export default async function NacionalDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+
+  // Reserved routes that should not be treated as IDs
+  const reservedRoutes = ['home', 'organizations', 'convocatorias', 'contacts']
+  if (reservedRoutes.includes(id)) {
+    notFound()
+  }
+
   const opp = NATIONAL_OPPS.find((o) => o.id === id)
   if (!opp) notFound()
 

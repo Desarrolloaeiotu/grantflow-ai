@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
+from sqlalchemy import Boolean, ForeignKey, Integer, Text
+from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -28,6 +28,13 @@ class Contact(Base):
     opportunity_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("opportunities.id", ondelete="SET NULL"), nullable=True
     )
+
+    # ── GLOBAL module extended fields ────────────────────────────────────────
+    priority_score: Mapped[int | None] = mapped_column(Integer)  # 1-5, relevance to aeioTU
+    department: Mapped[str | None] = mapped_column(Text)  # partnerships|grants|program|development
+    last_verified_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    verified_email_apollo: Mapped[bool] = mapped_column(Boolean, default=False)
+    social_profiles: Mapped[dict | None] = mapped_column(JSONB)  # {twitter, github, personal_web, etc}
 
     fetched_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), default=lambda: datetime.now(timezone.utc)

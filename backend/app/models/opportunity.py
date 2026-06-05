@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime, timezone
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import BigInteger, Boolean, Date, ForeignKey, Integer, Text
+from sqlalchemy import BigInteger, Boolean, Date, ForeignKey, Integer, SmallInteger, Text
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -56,6 +56,12 @@ class Opportunity(Base):
     decision: Mapped[str | None] = mapped_column(Text)  # go|no_go|pending
     urgency: Mapped[str | None] = mapped_column(Text)  # high|medium|low
     status: Mapped[str] = mapped_column(Text, default="detected")
+
+    # ── GLOBAL module extended fields ────────────────────────────────────────
+    sector_alignment: Mapped[dict | None] = mapped_column(JSONB)  # {ecd: 0.9, education: 0.8}
+    region_target: Mapped[str | None] = mapped_column(Text)  # global|latam|colombia|specific_countries
+    funder_strategic_fit: Mapped[int | None] = mapped_column(SmallInteger)  # 1-10
+    last_scraped_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
     # Vector y metadatos
     embedding: Mapped[list[float] | None] = mapped_column(Vector(768))

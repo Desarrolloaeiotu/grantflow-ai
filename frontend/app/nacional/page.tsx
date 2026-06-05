@@ -30,14 +30,22 @@ export default async function NacionalPage({
   let contacts: Contact[] = []
 
   try {
-    const [opps, met, conts] = await Promise.all([
+    const results = await Promise.allSettled([
       getOportunidadesNacionales(),
       getDashboardMetrics(),
       getContactosNacionales(),
     ])
-    opportunities = opps
-    metrics = met
-    contacts = conts
+
+    if (results[0].status === 'fulfilled') opportunities = results[0].value
+    if (results[1].status === 'fulfilled') metrics = results[1].value
+    if (results[2].status === 'fulfilled') contacts = results[2].value
+
+    // Log any failures but don't crash
+    results.forEach((result, idx) => {
+      if (result.status === 'rejected') {
+        console.error(`Data fetch ${idx} failed:`, result.reason)
+      }
+    })
   } catch (error) {
     console.error('Error fetching Nacional data:', error)
   }
