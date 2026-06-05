@@ -41,6 +41,10 @@ class Settings(BaseSettings):
     COPILOT_CLIENT_ID: str = ""
     COPILOT_CLIENT_SECRET: str = ""
 
+    # Analysis Service
+    ANALYSIS_MODEL: str = "claude-sonnet-4-5"
+    ANALYSIS_TIMEOUT: float = 30.0
+
     @property
     def async_database_url(self) -> str:
         return self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.models.funder import Funder
+from app.schemas.analysis import AnalysisResult
 from app.schemas.organization import OrganizationCreate, OrganizationRead
 from app.services.analysis_service import AnalysisService
 
@@ -134,13 +135,13 @@ async def analyze_organization(
     try:
         # Generate analysis
         service = AnalysisService()
-        analysis = service.analyze_organization(org)
+        analysis_result: AnalysisResult = service.analyze_organization(org)
 
         logger.info("Organization analysis generated", org_id=org_id, org_name=org.name)
 
         return {
             "org_id": str(org.id),
-            "analysis": analysis,
+            "analysis": analysis_result.model_dump(),
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 

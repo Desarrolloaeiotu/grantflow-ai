@@ -7,6 +7,7 @@ from anthropic import Anthropic
 
 from app.core.config import settings
 from app.models.funder import Funder
+from app.schemas.analysis import AnalysisResult
 
 logger = structlog.get_logger()
 
@@ -16,10 +17,11 @@ class AnalysisService:
 
     def __init__(self):
         self.client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-        self.model = "claude-sonnet-4-5"
+        self.model = settings.ANALYSIS_MODEL
         self.max_tokens = 2000
+        self.timeout = settings.ANALYSIS_TIMEOUT
 
-    def analyze_organization(self, org: Funder) -> dict:
+    def analyze_organization(self, org: Funder) -> AnalysisResult:
         """
         Generate strategic analysis for an organization.
 
@@ -27,7 +29,7 @@ class AnalysisService:
             org: Funder object with organization data
 
         Returns:
-            Dictionary with 5 analysis sections + primary_role + confidence
+            AnalysisResult with 5 analysis sections + primary_role + confidence
         """
         try:
             # Build context string
@@ -37,27 +39,29 @@ class AnalysisService:
             # Build prompt
             prompt = self._build_analysis_prompt(org_data, aeiotu_profile)
 
-            # Call Claude
+            # Call Claude with timeout
             response = self.client.messages.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
                 messages=[{"role": "user", "content": prompt}],
+                timeout=self.timeout,
             )
 
             # Extract and parse response
             response_text = response.content[0].text
 
-            # Try to extract JSON from response
-            analysis = self._parse_response(response_text)
+            # Try to extract JSON from response and validate
+            analysis_dict = self._parse_response(response_text)
+            analysis_result = AnalysisResult(**analysis_dict)
 
             logger.info(
                 "Organization analyzed successfully",
                 org_id=str(org.id),
                 org_name=org.name,
-                confidence=analysis.get("confidence", "unknown"),
+                confidence=analysis_result.confidence,
             )
 
-            return analysis
+            return analysis_result
 
         except json.JSONDecodeError as e:
             logger.error("Failed to parse Claude response as JSON", error=str(e))
@@ -179,7 +183,11 @@ You MUST respond ONLY with valid JSON. No additional text. The JSON structure is
 Now analyze this organization."""
 
     def _parse_response(self, response_text: str) -> dict:
-        """Parse Claude's JSON response and validate structure."""
+        """Parse Claude's JSON response and validate structure.
+
+        Returns:
+            Dictionary that can be validated by AnalysisResult model
+        """
         # Extract JSON from response (handle markdown code blocks if present)
         json_str = response_text.strip()
         if json_str.startswith("```"):
@@ -192,13 +200,13 @@ Now analyze this organization."""
         # Parse JSON
         analysis = json.loads(json_str)
 
-        # Validate required fields
+        # Validate required fields exist
         required_keys = ["capital", "model_export", "network", "colombia", "latam", "primary_role", "confidence"]
         for key in required_keys:
             if key not in analysis:
                 raise ValueError(f"Missing required field in analysis: {key}")
 
-        # Validate section structure
+        # Validate section structure (text + conclusion for each section)
         for section in ["capital", "model_export", "network", "colombia", "latam"]:
             if not isinstance(analysis[section], dict):
                 raise ValueError(f"Section '{section}' must be a dictionary")
