@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Organization, ApiListResponse } from "@/app/types"
+import { FilterSelect } from "@/app/components/FilterSelect"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -12,6 +13,7 @@ export default function GlobalOrganizationsPage() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState({
     invests_colombia: undefined as boolean | undefined,
     invests_latam: undefined as boolean | undefined,
@@ -26,6 +28,7 @@ export default function GlobalOrganizationsPage() {
 
   async function fetchOrganizations() {
     setLoading(true)
+    setError(null)
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -39,11 +42,18 @@ export default function GlobalOrganizationsPage() {
       if (filters.access_type !== undefined) params.append("access_type", filters.access_type)
 
       const res = await fetch(`${API_URL}/api/v1/organizations?${params}`)
+
+      if (!res.ok) {
+        throw new Error(`Fetch failed: ${res.statusText}`)
+      }
+
       const data: ApiListResponse<Organization> = await res.json()
 
       setOrganizations(data.items)
       setTotal(data.total)
     } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Error desconocido al cargar organizaciones'
+      setError(msg)
       console.error("Error fetching organizations:", error)
     } finally {
       setLoading(false)
@@ -51,37 +61,39 @@ export default function GlobalOrganizationsPage() {
   }
 
   async function handleExport() {
+    setError(null)
     try {
       const res = await fetch(`${API_URL}/api/v1/organizations/export/csv`)
+
+      if (!res.ok) {
+        throw new Error(`Export failed: ${res.statusText}`)
+      }
+
       const data = await res.json()
+
+      // Validate structure
+      if (!data.content_base64 || typeof data.content_base64 !== 'string') {
+        throw new Error('Invalid export response structure')
+      }
+
+      // Rough size check: base64 is ~4/3 of original
+      const estimatedBytes = (data.content_base64.length * 3) / 4
+      if (estimatedBytes > 10 * 1024 * 1024) {
+        throw new Error('Export file too large (max 10MB)')
+      }
+
       const csv = atob(data.content_base64)
       const blob = new Blob([csv], { type: "text/csv" })
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = data.filename
+      a.download = data.filename || 'organizations.csv'
       a.click()
+      window.URL.revokeObjectURL(url)  // Cleanup memory
     } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Error desconocido al exportar'
+      setError(`Export failed: ${msg}`)
       console.error("Error exporting:", error)
-    }
-  }
-
-  const getAccessTypeColor = (type: string | undefined): string => {
-    switch (type) {
-      case "convocatoria": return "#2196F3"
-      case "mixto": return "#FF9800"
-      case "relacional": return "#4CAF50"
-      case "invitacion": return "#9C27B0"
-      default: return "var(--muted)"
-    }
-  }
-
-  const getStrategicObjColor = (obj: string | undefined): string => {
-    switch (obj) {
-      case "capital": return "#1976D2"
-      case "exportacion_modelo": return "#388E3C"
-      case "red": return "#D32F2F"
-      default: return "var(--muted)"
     }
   }
 
@@ -94,13 +106,27 @@ export default function GlobalOrganizationsPage() {
         </p>
       </div>
 
+      {error && (
+        <div style={{
+          padding: '12px 16px',
+          backgroundColor: 'rgba(211, 47, 47, 0.1)',
+          border: '1px solid var(--nogo)',
+          borderRadius: '4px',
+          color: 'var(--nogo)',
+          fontSize: '13px',
+          marginBottom: '16px'
+        }}>
+          {error}
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
           <input
             type="checkbox"
             checked={filters.invests_colombia ?? false}
             onChange={(e) => {
-              setFilters({ ...filters, invests_colombia: e.target.checked || undefined })
+              setFilters({ ...filters, invests_colombia: e.target.checked ? true : undefined })
               setPage(1)
             }}
             style={{ cursor: 'pointer' }}
@@ -113,7 +139,7 @@ export default function GlobalOrganizationsPage() {
             type="checkbox"
             checked={filters.invests_latam ?? false}
             onChange={(e) => {
-              setFilters({ ...filters, invests_latam: e.target.checked || undefined })
+              setFilters({ ...filters, invests_latam: e.target.checked ? true : undefined })
               setPage(1)
             }}
             style={{ cursor: 'pointer' }}
@@ -121,75 +147,51 @@ export default function GlobalOrganizationsPage() {
           <span>Invierte en Latinoamérica</span>
         </label>
 
-        <select
-          value={filters.org_type ?? ""}
-          onChange={(e) => {
-            setFilters({ ...filters, org_type: e.target.value || undefined })
-            setPage(1)
-          }}
-          style={{
-            padding: '6px 10px',
-            fontSize: '13px',
-            border: '1px solid var(--border)',
-            borderRadius: '4px',
-            backgroundColor: 'var(--bg-subtle)',
-            color: 'var(--text)',
-            cursor: 'pointer',
-          }}
-        >
-          <option value="">Tipo de Organización</option>
-          <option value="foundation">Fundación</option>
-          <option value="government">Gobierno</option>
-          <option value="multilateral">Multilateral</option>
-          <option value="corporate">Corporativo</option>
-          <option value="ngo">ONG</option>
-          <option value="academic">Académico</option>
-        </select>
+        <FilterSelect
+          label="Tipo de Organización"
+          ariaLabel="Filtrar por tipo de organización"
+          value={filters.org_type}
+          options={[
+            { value: 'foundation', label: 'Fundación' },
+            { value: 'government', label: 'Gobierno' },
+            { value: 'multilateral', label: 'Multilateral' },
+            { value: 'corporate', label: 'Corporativo' },
+            { value: 'ngo', label: 'ONG' },
+            { value: 'academic', label: 'Académico' },
+          ]}
+          onChange={(v) => { setFilters({ ...filters, org_type: v }); setPage(1) }}
+          onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px var(--primary)')}
+          onBlur={(e) => (e.target.style.boxShadow = 'none')}
+        />
 
-        <select
-          value={filters.strategic_obj ?? ""}
-          onChange={(e) => {
-            setFilters({ ...filters, strategic_obj: e.target.value || undefined })
-            setPage(1)
-          }}
-          style={{
-            padding: '6px 10px',
-            fontSize: '13px',
-            border: '1px solid var(--border)',
-            borderRadius: '4px',
-            backgroundColor: 'var(--bg-subtle)',
-            color: 'var(--text)',
-            cursor: 'pointer',
-          }}
-        >
-          <option value="">Objetivo Estratégico</option>
-          <option value="capital">Capital</option>
-          <option value="exportacion_modelo">Exportación Modelo</option>
-          <option value="red">Red</option>
-        </select>
+        <FilterSelect
+          label="Objetivo Estratégico"
+          ariaLabel="Filtrar por objetivo estratégico"
+          value={filters.strategic_obj}
+          options={[
+            { value: 'capital', label: 'Capital' },
+            { value: 'exportacion_modelo', label: 'Exportación Modelo' },
+            { value: 'red', label: 'Red' },
+          ]}
+          onChange={(v) => { setFilters({ ...filters, strategic_obj: v }); setPage(1) }}
+          onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px var(--primary)')}
+          onBlur={(e) => (e.target.style.boxShadow = 'none')}
+        />
 
-        <select
-          value={filters.access_type ?? ""}
-          onChange={(e) => {
-            setFilters({ ...filters, access_type: e.target.value || undefined })
-            setPage(1)
-          }}
-          style={{
-            padding: '6px 10px',
-            fontSize: '13px',
-            border: '1px solid var(--border)',
-            borderRadius: '4px',
-            backgroundColor: 'var(--bg-subtle)',
-            color: 'var(--text)',
-            cursor: 'pointer',
-          }}
-        >
-          <option value="">Tipo de Acceso</option>
-          <option value="convocatoria">Convocatoria</option>
-          <option value="mixto">Mixto</option>
-          <option value="relacional">Relacional</option>
-          <option value="invitacion">Invitación</option>
-        </select>
+        <FilterSelect
+          label="Tipo de Acceso"
+          ariaLabel="Filtrar por tipo de acceso"
+          value={filters.access_type}
+          options={[
+            { value: 'convocatoria', label: 'Convocatoria' },
+            { value: 'mixto', label: 'Mixto' },
+            { value: 'relacional', label: 'Relacional' },
+            { value: 'invitacion', label: 'Invitación' },
+          ]}
+          onChange={(v) => { setFilters({ ...filters, access_type: v }); setPage(1) }}
+          onFocus={(e) => (e.target.style.boxShadow = '0 0 0 2px var(--primary)')}
+          onBlur={(e) => (e.target.style.boxShadow = 'none')}
+        />
 
         <button
           onClick={handleExport}
@@ -386,4 +388,36 @@ export default function GlobalOrganizationsPage() {
       )}
     </div>
   )
+}
+
+// Color functions - moved outside component to prevent recreation on each render
+const getAccessTypeColor = (type: string | undefined): string => {
+  switch (type) {
+    case "convocatoria": return "#2196F3"
+    case "mixto": return "#FF9800"
+    case "relacional": return "#4CAF50"
+    case "invitacion": return "#9C27B0"
+    default: return "var(--muted)"
+  }
+}
+
+const getStrategicObjColor = (obj: string | undefined): string => {
+  switch (obj) {
+    case "capital": return "#1976D2"
+    case "exportacion_modelo": return "#388E3C"
+    case "red": return "#D32F2F"
+    default: return "var(--muted)"
+  }
+}
+
+const getOrgTypeColor = (org_type: string | undefined): string => {
+  switch (org_type) {
+    case "foundation": return "#1976D2"
+    case "government": return "#D32F2F"
+    case "multilateral": return "#388E3C"
+    case "corporate": return "#FF9800"
+    case "ngo": return "#9C27B0"
+    case "academic": return "#00BCD4"
+    default: return "var(--muted)"
+  }
 }
