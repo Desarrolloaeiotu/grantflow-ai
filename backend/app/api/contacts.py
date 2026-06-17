@@ -38,6 +38,38 @@ async def list_contacts(
     - country: Filter by funder country (e.g., 'Colombia')
     - search: Search by name, title, or organization
     """
+    from app.mock_data import MOCK_CONTACTS
+
+    # Use mock data for development
+    contacts = MOCK_CONTACTS
+
+    # Apply filters to mock data
+    if search:
+        search_lower = search.lower()
+        contacts = [c for c in contacts if
+                   search_lower in c.get("full_name", "").lower() or
+                   search_lower in c.get("title", "").lower() or
+                   search_lower in c.get("funder_name", "").lower()]
+
+    total = len(contacts)
+    start = (page - 1) * size
+    end = start + size
+    items = contacts[start:end]
+
+    return ContactList(items=items, total=total, page=page, size=size)
+
+
+# OLD CODE BELOW - KEPT FOR REFERENCE
+async def _list_contacts_db(
+    funder_id: uuid.UUID | None = Query(None),
+    role_category: Optional[str] = None,
+    country: Optional[str] = None,
+    search: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    size: int = Query(25, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+) -> ContactList:
+    """[OLD] List contacts from database - NOT USED IN DEV"""
     filters = []
     if funder_id:
         filters.append(Contact.funder_id == funder_id)

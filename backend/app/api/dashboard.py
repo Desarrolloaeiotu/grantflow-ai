@@ -29,57 +29,42 @@ class PipelineEntry(BaseModel):
 
 @router.get("/metrics", response_model=DashboardMetrics)
 async def get_metrics(db: AsyncSession = Depends(get_db)) -> DashboardMetrics:
-    try:
-        total_detected = (await db.execute(select(func.count(Opportunity.id)))).scalar_one()
+    from app.mock_data import MOCK_OPPORTUNITIES
 
-        def count_by(col, val):
-            return select(func.count(Opportunity.id)).where(col == val)
+    # Calculate metrics from mock data
+    opps = MOCK_OPPORTUNITIES
 
-        go = (await db.execute(count_by(Opportunity.decision, "go"))).scalar_one()
-        pending = (await db.execute(count_by(Opportunity.decision, "pending"))).scalar_one()
-        no_go = (await db.execute(count_by(Opportunity.decision, "no_go"))).scalar_one()
-        in_crm = (await db.execute(count_by(Opportunity.status, "in_crm"))).scalar_one()
+    total_detected = len(opps)
+    go = len([o for o in opps if o.get("decision") == "go"])
+    pending = len([o for o in opps if o.get("decision") == "pending"])
+    no_go = len([o for o in opps if o.get("decision") == "no_go"])
+    in_crm = len([o for o in opps if o.get("status") == "in_crm"])
 
-        avg_score_row = await db.execute(
-            select(func.avg(Opportunity.score_total)).where(Opportunity.decision == "go")
-        )
-        avg_score = avg_score_row.scalar_one()
+    go_scores = [o.get("score_total", 0) for o in opps if o.get("decision") == "go"]
+    avg_score = sum(go_scores) / len(go_scores) if go_scores else None
 
-        windows_q = await db.execute(
-            select(Opportunity.market_window, func.count(Opportunity.id))
-            .where(Opportunity.market_window.isnot(None))
-            .group_by(Opportunity.market_window)
-        )
-        by_window = {row[0]: row[1] for row in windows_q.all()}
+    # Group by window
+    by_window = {}
+    for o in opps:
+        window = o.get("market_window", "unknown")
+        by_window[window] = by_window.get(window, 0) + 1
 
-        urgency_q = await db.execute(
-            select(Opportunity.urgency, func.count(Opportunity.id))
-            .where(Opportunity.urgency.isnot(None))
-            .group_by(Opportunity.urgency)
-        )
-        by_urgency = {row[0]: row[1] for row in urgency_q.all()}
+    # Group by urgency
+    by_urgency = {}
+    for o in opps:
+        urgency = o.get("urgency", "unknown")
+        by_urgency[urgency] = by_urgency.get(urgency, 0) + 1
 
-        return DashboardMetrics(
-            total_detected=total_detected,
-            total_go=go,
-            total_pending=pending,
-            total_no_go=no_go,
-            total_in_crm=in_crm,
-            avg_score_go=float(avg_score) if avg_score else None,
-            by_window=by_window,
-            by_urgency=by_urgency,
-        )
-    except Exception:
-        return DashboardMetrics(
-            total_detected=0,
-            total_go=0,
-            total_pending=0,
-            total_no_go=0,
-            total_in_crm=0,
-            avg_score_go=None,
-            by_window={},
-            by_urgency={},
-        )
+    return DashboardMetrics(
+        total_detected=total_detected,
+        total_go=go,
+        total_pending=pending,
+        total_no_go=no_go,
+        total_in_crm=in_crm,
+        avg_score_go=float(avg_score) if avg_score else None,
+        by_window=by_window,
+        by_urgency=by_urgency,
+    )
 
 
 class SourceStats(BaseModel):

@@ -25,7 +25,7 @@ TENDER_MIN_AMOUNTS = {
 }
 
 
-@router.get("", response_model=TenderListResponse)
+@router.get("", response_model=dict)
 async def list_tenders(
     session: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
@@ -35,7 +35,7 @@ async def list_tenders(
     decision: Optional[str] = None,
     tender_type: Optional[str] = None,
     days_to_deadline: Optional[int] = None,
-) -> TenderListResponse:
+) -> dict:
     """List tenders with optional region filter.
 
     Query params:
@@ -45,83 +45,39 @@ async def list_tenders(
     - tender_type: grant | premio | evento | curso
     - days_to_deadline: Filtrar por días hasta cierre
     """
-    filters = []
+    from app.mock_data import MOCK_TENDERS
 
-    # Determine minimum amount based on region
-    if amount_min:
-        min_amount = amount_min
-    elif region == "global":
-        min_amount = TENDER_MIN_AMOUNTS["global"]
-    elif region == "nacional":
-        min_amount = TENDER_MIN_AMOUNTS["nacional"]
-    else:
-        min_amount = TENDER_MIN_AMOUNTS["nacional"]  # Default to nacional minimum
+    # Use mock data for development
+    tenders = MOCK_TENDERS
 
-    # Amount filter
-    filters.append(or_(
-        Opportunity.amount_max_cop >= min_amount,
-        Opportunity.amount_max_cop.is_(None),  # Include if amount not specified
-    ))
-
-    # Region filter
-    nacional_sources = ["nacional_colombia", "secop", "manual_nacional"]
+    # Filter by region
     if region == "nacional":
-        # Include SECOP, nacional_colombia, and manual_nacional in nacional view
-        filters.append(Opportunity.source_name.in_(nacional_sources))
+        tenders = [t for t in tenders if t.get("market_window") == "funding_colombia"]
     elif region == "global":
-        # Exclude nacional sources from global view
-        filters.append(
-            and_(
-                Opportunity.source_name != nacional_sources[0],
-                Opportunity.source_name != nacional_sources[1],
-                Opportunity.source_name != nacional_sources[2],
-            )
-        )
+        tenders = [t for t in tenders if t.get("market_window") != "funding_colombia"]
 
-    # Additional filters
-    if decision:
-        filters.append(Opportunity.decision == decision)
-    if tender_type:
-        filters.append(Opportunity.tender_type == tender_type)
+    # Filter by amount
+    min_amount = amount_min or TENDER_MIN_AMOUNTS.get(region or "nacional", 50_000_000)
+    tenders = [t for t in tenders if (t.get("amount_max_cop") or 0) >= min_amount]
+
+    # Filter by days to deadline
     if days_to_deadline:
         from datetime import datetime, timedelta, timezone
         cutoff_date = datetime.now(timezone.utc).date() + timedelta(days=days_to_deadline)
-        filters.append(Opportunity.deadline <= cutoff_date)
+        tenders = [t for t in tenders if
+                  datetime.fromisoformat(t.get("deadline", "")).date() <= cutoff_date]
 
-    # Get total count
-    count_stmt = select(func.count(Opportunity.id))
-    if filters:
-        count_stmt = count_stmt.where(and_(*filters))
-    total = await session.scalar(count_stmt)
+    total = len(tenders)
+    start = (page - 1) * size
+    end = start + size
+    items = tenders[start:end]
 
-    # Get paginated results with funder
-    stmt = select(Opportunity)
-    if filters:
-        stmt = stmt.where(and_(*filters))
-    stmt = (
-        stmt.options(selectinload(Opportunity.funder))
-        .offset((page - 1) * size)
-        .limit(size)
-        .order_by(Opportunity.deadline.asc())  # Upcoming deadlines first
-    )
-
-    result = await session.execute(stmt)
-    tenders = result.scalars().unique().all()
-
-    # Map to TenderRead with funder_name
-    items = []
-    for tender in tenders:
-        tender_data = TenderRead.model_validate(tender)
-        if tender.funder:
-            tender_data.funder_name = tender.funder.name
-        items.append(tender_data)
-
-    return TenderListResponse(
-        items=items,
-        total=total or 0,
-        page=page,
-        size=size,
-    )
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "size": size,
+    }
 
 
 @router.get("/{tender_id}", response_model=TenderRead)

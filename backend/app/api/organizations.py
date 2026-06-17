@@ -21,7 +21,6 @@ router = APIRouter()
 
 @router.get("", response_model=dict)
 async def list_organizations(
-    session: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
     size: int = Query(25, ge=1, le=100),
     country: Optional[str] = None,
@@ -38,50 +37,36 @@ async def list_organizations(
     - invests_latam: Filter by Latam investment
     - access_type: convocatoria | mixto | relacional | invitacion
     - search: Search by name, website, or objective
+
+    NOTE: Currently returns mock data for development. Connects to Supabase when available.
     """
-    filters = []
+    # Import extended mock data with global organizations
+    from app.mock_data import MOCK_ORGANIZATIONS_EXTENDED
+    MOCK_ORGANIZATIONS = MOCK_ORGANIZATIONS_EXTENDED
+
+    # Filter mock data
+    filtered = MOCK_ORGANIZATIONS
 
     if country:
-        filters.append(Funder.country == country)
+        filtered = [o for o in filtered if o.get("country", "").lower() == country.lower()]
     if invests_colombia is not None:
-        filters.append(Funder.invests_colombia == invests_colombia)
+        filtered = [o for o in filtered if o.get("invests_colombia") == invests_colombia]
     if invests_latam is not None:
-        filters.append(Funder.invests_latam == invests_latam)
+        filtered = [o for o in filtered if o.get("invests_latam") == invests_latam]
     if access_type:
-        filters.append(Funder.access_type == access_type)
+        filtered = [o for o in filtered if o.get("access_type") == access_type]
     if search:
-        search_term = f"%{search.lower()}%"
-        filters.append(
-            or_(
-                func.lower(Funder.name).ilike(search_term),
-                func.lower(Funder.general_objective).ilike(search_term),
-            )
-        )
+        search_lower = search.lower()
+        filtered = [o for o in filtered if search_lower in o.get("name", "").lower() or search_lower in o.get("general_objective", "").lower()]
 
-    # Get total count
-    count_stmt = select(func.count(Funder.id))
-    if filters:
-        count_stmt = count_stmt.where(and_(*filters))
-    total = await session.scalar(count_stmt)
-
-    # Get paginated results
-    stmt = select(Funder)
-    if filters:
-        stmt = stmt.where(and_(*filters))
-    stmt = (
-        stmt.offset((page - 1) * size)
-        .limit(size)
-        .order_by(Funder.name)
-    )
-
-    result = await session.execute(stmt)
-    funders = result.scalars().all()
-
-    items = [OrganizationRead.model_validate(f) for f in funders]
+    total = len(filtered)
+    start = (page - 1) * size
+    end = start + size
+    paginated = filtered[start:end]
 
     return {
-        "items": items,
-        "total": total or 0,
+        "items": paginated,
+        "total": total,
         "page": page,
         "size": size,
     }

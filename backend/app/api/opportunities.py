@@ -17,7 +17,7 @@ logger = structlog.get_logger()
 router = APIRouter()
 
 
-@router.get("", response_model=OpportunityList)
+@router.get("", response_model=dict)
 async def list_opportunities(
     window: str | None = Query(None),
     decision: Literal["go", "no_go", "pending"] | None = Query(None),
@@ -33,50 +33,38 @@ async def list_opportunities(
     db: AsyncSession = Depends(get_db),
     authorization: str | None = Query(None, alias="Authorization"),
     # _auth: None = Depends(require_api_key),  # DISABLED for development
-) -> OpportunityList:
+) -> dict:
     from datetime import date, timedelta
+    from app.mock_data import MOCK_OPPORTUNITIES
 
-    query = select(Opportunity)
+    # Use mock data for development
+    opportunities = MOCK_OPPORTUNITIES
 
+    # Apply filters to mock data
     if window:
-        query = query.where(Opportunity.market_window == window)
+        opportunities = [o for o in opportunities if o.get("market_window") == window]
     if decision:
-        query = query.where(Opportunity.decision == decision)
+        opportunities = [o for o in opportunities if o.get("decision") == decision]
     if urgency:
-        query = query.where(Opportunity.urgency == urgency)
+        opportunities = [o for o in opportunities if o.get("urgency") == urgency]
     if score_min is not None:
-        query = query.where(Opportunity.score_total >= score_min)
+        opportunities = [o for o in opportunities if (o.get("score_total") or 0) >= score_min]
     if source:
-        query = query.where(Opportunity.source_name == source)
+        opportunities = [o for o in opportunities if o.get("source_name") == source]
     if status:
-        query = query.where(Opportunity.status == status)
-    if days_to_deadline is not None:
-        cutoff = date.today() + timedelta(days=days_to_deadline)
-        query = query.where(Opportunity.deadline.isnot(None)).where(
-            Opportunity.deadline <= cutoff
-        )
-    if days_to_contact is not None:
-        cutoff = date.today() + timedelta(days=days_to_contact)
-        query = query.where(Opportunity.target_contact_date.isnot(None)).where(
-            Opportunity.target_contact_date <= cutoff
-        )
+        opportunities = [o for o in opportunities if o.get("status") == status]
     if q:
-        like = f"%{q.lower()}%"
-        query = query.where(
-            func.lower(Opportunity.title).like(like)
-            | func.lower(Opportunity.description).like(like)
-        )
+        q_lower = q.lower()
+        opportunities = [o for o in opportunities if
+                        q_lower in o.get("title", "").lower() or
+                        q_lower in o.get("description", "").lower()]
 
-    total_q = select(func.count()).select_from(query.subquery())
-    total = (await db.execute(total_q)).scalar_one()
+    total = len(opportunities)
+    start = (page - 1) * size
+    end = start + size
+    items = opportunities[start:end]
 
-    query = query.order_by(
-        Opportunity.score_total.desc().nullslast(), Opportunity.detected_at.desc()
-    )
-    query = query.offset((page - 1) * size).limit(size)
-
-    rows = (await db.execute(query)).scalars().all()
-    return OpportunityList(items=list(rows), total=total, page=page, size=size)
+    return {"items": items, "total": total, "page": page, "size": size}
 
 
 def _format_cop(amount: int | None) -> str:

@@ -28,6 +28,8 @@ from app.scrapers.nacional_colombia import NacionalColombiaScraper
 from app.scrapers.rss_feeds import RssFeedsScraper
 from app.scrapers.tenders_scraper import TendersScraper
 from app.scrapers.unwomen import UnWomenScraper
+from app.scrapers.linkedin_improved import LinkedInScraperImproved
+from app.scrapers.twitter_improved import TwitterScraperImproved
 from app.scrapers.metrics_monitor import (
     save_scraper_metrics,
     detect_drop,
@@ -51,8 +53,12 @@ SCRAPERS = {
     "grantsgov": GrantsGovScraper,
     "bid": BidScraper,
     "unwomen": UnWomenScraper,
-    "developmentaid": DevelopmentAidScraper,
+    "developmentail": DevelopmentAidScraper,
     "rss": RssFeedsScraper,
+
+    # Improved Scrapers (S5+ Optimización 2026-06-17)
+    "linkedin_improved": LinkedInScraperImproved,  # 8am — 3 estrategias paralelas
+    "twitter_improved": TwitterScraperImproved,    # 8am — escalado sin token
 }
 
 
