@@ -37,7 +37,8 @@ async def list_opportunities(
     from datetime import date, timedelta
 
     # Build query from database (not mock)
-    query = select(Opportunity)
+    from sqlalchemy.orm import joinedload
+    query = select(Opportunity).options(joinedload(Opportunity.funder))
 
     # Apply filters
     if window:
@@ -87,8 +88,8 @@ async def list_opportunities(
             "id": str(opp.id),
             "title": opp.title,
             "description": opp.description,
-            "funder_id": opp.funder_id,
-            "funder_name": opp.funder_name,
+            "funder_id": str(opp.funder_id) if opp.funder_id else None,
+            "funder_name": opp.funder.name if opp.funder else None,
             "amount_min_cop": opp.amount_min_cop,
             "amount_max_cop": opp.amount_max_cop,
             "deadline": opp.deadline.isoformat() if opp.deadline else None,
