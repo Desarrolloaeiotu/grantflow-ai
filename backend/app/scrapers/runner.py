@@ -21,15 +21,15 @@ from app.core.database import AsyncSessionLocal
 from app.models.funder import Funder
 from app.models.opportunity import Opportunity
 from app.scrapers.base import ScraperError
-# from app.scrapers.bid_scrapling import BidLabScraperScrapling  # Requires Scrapling deps
+from app.scrapers.bid_scrapling import BidLabScraperScrapling
 from app.scrapers.developmentaid import DevelopmentAidScraper
-# from app.scrapers.grantsgov_scrapling import GrantsGovScraperScrapling  # Requires Scrapling deps
+from app.scrapers.grantsgov_scrapling import GrantsGovScraperScrapling
 from app.scrapers.nacional_colombia import NacionalColombiaScraper
 from app.scrapers.rss_feeds import RssFeedsScraper
 # from app.scrapers.tenders_scraper import TendersScraper  # Requires bid.py
 from app.scrapers.unwomen import UnWomenScraper
-# from app.scrapers.linkedin_improved import LinkedInScraperImproved  # Requires Scrapling deps
-# from app.scrapers.twitter_improved import TwitterScraperImproved  # Requires Scrapling deps
+from app.scrapers.linkedin_improved import LinkedInScraperImproved
+from app.scrapers.twitter_improved import TwitterScraperImproved
 from app.scrapers.metrics_monitor import (
     save_scraper_metrics,
     detect_drop,
@@ -44,17 +44,19 @@ logger = structlog.get_logger()
 MAX_CONCURRENT = 4
 
 SCRAPERS = {
-    # Scrapers Activos (Legacy - sin dependencias de Scrapling)
+    # Scrapers Nacionales
     "nacional_colombia": NacionalColombiaScraper,  # 5am — 13 fuentes nacionales
     "unwomen": UnWomenScraper,  # 8am
     "developmentaid": DevelopmentAidScraper,  # 8am
     "rss": RssFeedsScraper,  # 8am
 
-    # Comentados - Requieren dependencias:
-    # "grantsgov_scrapling": GrantsGovScraperScrapling,  # Requires Scrapling deps
-    # "bid_scrapling": BidLabScraperScrapling,  # Requires Scrapling deps
-    # "linkedin_improved": LinkedInScraperImproved,  # Requires Scrapling deps
-    # "twitter_improved": TwitterScraperImproved,  # Requires Scrapling deps
+    # Scrapers Globales (con Scrapling)
+    "grantsgov_scrapling": GrantsGovScraperScrapling,  # API + fallback scraping
+    "bid_scrapling": BidLabScraperScrapling,  # Dynamic rendering con Scrapling
+    "linkedin_improved": LinkedInScraperImproved,  # 3 estrategias paralelas
+    "twitter_improved": TwitterScraperImproved,  # 3 estrategias escaladas
+
+    # Comentados - Requieren dependencias adicionales:
     # "tenders_global": ("tenders", "global"),      # Requires bid.py
     # "tenders_nacional": ("tenders", "nacional"),  # Requires bid.py
 }
