@@ -35,34 +35,76 @@ async def list_opportunities(
     # _auth: None = Depends(require_api_key),  # DISABLED for development
 ) -> dict:
     from datetime import date, timedelta
-    from app.mock_data import MOCK_OPPORTUNITIES
 
-    # Use mock data for development
-    opportunities = MOCK_OPPORTUNITIES
+    # Build query from database (not mock)
+    query = select(Opportunity)
 
-    # Apply filters to mock data
+    # Apply filters
     if window:
-        opportunities = [o for o in opportunities if o.get("market_window") == window]
+        query = query.where(Opportunity.market_window == window)
     if decision:
-        opportunities = [o for o in opportunities if o.get("decision") == decision]
+        query = query.where(Opportunity.decision == decision)
     if urgency:
-        opportunities = [o for o in opportunities if o.get("urgency") == urgency]
+        query = query.where(Opportunity.urgency == urgency)
     if score_min is not None:
-        opportunities = [o for o in opportunities if (o.get("score_total") or 0) >= score_min]
+        query = query.where(Opportunity.score_total >= score_min)
     if source:
-        opportunities = [o for o in opportunities if o.get("source_name") == source]
+        query = query.where(Opportunity.source_name == source)
     if status:
-        opportunities = [o for o in opportunities if o.get("status") == status]
+        query = query.where(Opportunity.status == status)
     if q:
         q_lower = q.lower()
-        opportunities = [o for o in opportunities if
-                        q_lower in o.get("title", "").lower() or
-                        q_lower in o.get("description", "").lower()]
+        query = query.where(
+            (Opportunity.title.ilike(f"%{q_lower}%")) |
+            (Opportunity.description.ilike(f"%{q_lower}%"))
+        )
 
-    total = len(opportunities)
-    start = (page - 1) * size
-    end = start + size
-    items = opportunities[start:end]
+    # Get total count
+    count_query = select(func.count(Opportunity.id)).select_from(Opportunity)
+    if window:
+        count_query = count_query.where(Opportunity.market_window == window)
+    if decision:
+        count_query = count_query.where(Opportunity.decision == decision)
+    if urgency:
+        count_query = count_query.where(Opportunity.urgency == urgency)
+    if score_min is not None:
+        count_query = count_query.where(Opportunity.score_total >= score_min)
+    if source:
+        count_query = count_query.where(Opportunity.source_name == source)
+    if status:
+        count_query = count_query.where(Opportunity.status == status)
+
+    total = (await db.execute(count_query)).scalar() or 0
+
+    # Pagination
+    query = query.offset((page - 1) * size).limit(size)
+    result = await db.execute(query)
+    opportunities = result.scalars().all()
+
+    # Convert to dict format
+    items = [
+        {
+            "id": str(opp.id),
+            "title": opp.title,
+            "description": opp.description,
+            "funder_id": opp.funder_id,
+            "funder_name": opp.funder_name,
+            "amount_min_cop": opp.amount_min_cop,
+            "amount_max_cop": opp.amount_max_cop,
+            "deadline": opp.deadline.isoformat() if opp.deadline else None,
+            "url_rfp": opp.url_rfp,
+            "url_source": opp.url_source,
+            "source_name": opp.source_name,
+            "market_window": opp.market_window,
+            "capital_type": opp.capital_type,
+            "score_total": opp.score_total,
+            "decision": opp.decision,
+            "urgency": opp.urgency,
+            "status": opp.status,
+            "detected_at": opp.detected_at.isoformat() if opp.detected_at else None,
+        }
+        for opp in opportunities
+    ]
 
     return {"items": items, "total": total, "page": page, "size": size}
 
