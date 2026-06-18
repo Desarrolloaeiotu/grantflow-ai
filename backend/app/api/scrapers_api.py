@@ -5,7 +5,7 @@ import asyncio
 import structlog
 from fastapi import APIRouter, BackgroundTasks
 
-from app.scrapers.contacts_scraper import scrape_all_contacts
+from app.scrapers.utils.contacts_scraper import scrape_all_contacts
 # from app.scrapers.tenders_global_scraper import run_global_scraping  # TODO: Fix imports
 
 logger = structlog.get_logger()

@@ -30,7 +30,7 @@ from app.scrapers.scraper_monitor import (
     alert_to_slack,
     persist_monitor_log,
 )
-from app.scrapers.endpoint_monitor import (
+from app.scrapers.utils.endpoint_monitor import (
     run_all_endpoint_monitors,
     validate_endpoint,
     alert_to_slack as endpoint_alert_to_slack,
