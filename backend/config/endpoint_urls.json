@@ -1,0 +1,37 @@
+{
+  "grantsgov_api": {
+    "url": "https://api.grants.gov/v1/api/search2",
+    "method": "POST",
+    "content_type": "json",
+    "timeout_sec": 10,
+    "description": "Grants.gov API search endpoint",
+    "category": "scraper",
+    "request_body": {
+      "searchType": 1
+    }
+  },
+  "bid_api": {
+    "url": "https://www.iadb.org/en/oportunidades",
+    "method": "GET",
+    "content_type": "html",
+    "timeout_sec": 10,
+    "description": "BID opportunities portal",
+    "category": "scraper"
+  },
+  "icbf_convocatorias": {
+    "url": "https://www.icbf.gov.co/convocatorias",
+    "method": "GET",
+    "content_type": "html",
+    "timeout_sec": 10,
+    "description": "ICBF convocatorias page",
+    "category": "national"
+  },
+  "minEducacion_rss": {
+    "url": "https://www.mineducacion.gov.co/feed/",
+    "method": "GET",
+    "content_type": "xml",
+    "timeout_sec": 10,
+    "description": "Ministry of Education RSS feed",
+    "category": "national"
+  }
+}

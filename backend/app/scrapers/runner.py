@@ -21,15 +21,15 @@ from app.core.database import AsyncSessionLocal
 from app.models.funder import Funder
 from app.models.opportunity import Opportunity
 from app.scrapers.base import ScraperError
-from app.scrapers.bid import BidScraper
+# from app.scrapers.bid_scrapling import BidLabScraperScrapling  # Requires Scrapling deps
 from app.scrapers.developmentaid import DevelopmentAidScraper
-from app.scrapers.grantsgov import GrantsGovScraper
+# from app.scrapers.grantsgov_scrapling import GrantsGovScraperScrapling  # Requires Scrapling deps
 from app.scrapers.nacional_colombia import NacionalColombiaScraper
 from app.scrapers.rss_feeds import RssFeedsScraper
-from app.scrapers.tenders_scraper import TendersScraper
+# from app.scrapers.tenders_scraper import TendersScraper  # Requires bid.py
 from app.scrapers.unwomen import UnWomenScraper
-from app.scrapers.linkedin_improved import LinkedInScraperImproved
-from app.scrapers.twitter_improved import TwitterScraperImproved
+# from app.scrapers.linkedin_improved import LinkedInScraperImproved  # Requires Scrapling deps
+# from app.scrapers.twitter_improved import TwitterScraperImproved  # Requires Scrapling deps
 from app.scrapers.metrics_monitor import (
     save_scraper_metrics,
     detect_drop,
@@ -44,21 +44,19 @@ logger = structlog.get_logger()
 MAX_CONCURRENT = 4
 
 SCRAPERS = {
-    # v2: Tenders scrapers with amount filtering
-    "tenders_global": ("tenders", "global"),      # ≥ COP $100M — Grants.gov, BID, UN Women, RSS
-    "tenders_nacional": ("tenders", "nacional"),  # ≥ COP $50M — Nacional Colombia
+    # Scrapers Activos (Legacy - sin dependencias de Scrapling)
+    "nacional_colombia": NacionalColombiaScraper,  # 5am — 13 fuentes nacionales
+    "unwomen": UnWomenScraper,  # 8am
+    "developmentaid": DevelopmentAidScraper,  # 8am
+    "rss": RssFeedsScraper,  # 8am
 
-    # Legacy: Individual scrapers (kept for backwards compatibility)
-    "nacional_colombia": NacionalColombiaScraper,  # 5am — prioridad nacional
-    "grantsgov": GrantsGovScraper,
-    "bid": BidScraper,
-    "unwomen": UnWomenScraper,
-    "developmentail": DevelopmentAidScraper,
-    "rss": RssFeedsScraper,
-
-    # Improved Scrapers (S5+ Optimización 2026-06-17)
-    "linkedin_improved": LinkedInScraperImproved,  # 8am — 3 estrategias paralelas
-    "twitter_improved": TwitterScraperImproved,    # 8am — escalado sin token
+    # Comentados - Requieren dependencias:
+    # "grantsgov_scrapling": GrantsGovScraperScrapling,  # Requires Scrapling deps
+    # "bid_scrapling": BidLabScraperScrapling,  # Requires Scrapling deps
+    # "linkedin_improved": LinkedInScraperImproved,  # Requires Scrapling deps
+    # "twitter_improved": TwitterScraperImproved,  # Requires Scrapling deps
+    # "tenders_global": ("tenders", "global"),      # Requires bid.py
+    # "tenders_nacional": ("tenders", "nacional"),  # Requires bid.py
 }
 
 
