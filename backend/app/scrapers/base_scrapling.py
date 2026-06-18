@@ -93,14 +93,17 @@ class BaseScraperWithScrapling(ABC):
         """
         try:
             if headless:
-                page = self.dynamic_fetcher.fetch(
+                # Envolver sync call en asyncio.to_thread() para no bloquear event loop
+                page = await asyncio.to_thread(
+                    self.dynamic_fetcher.fetch,
                     url,
                     headless=True,
                     network_idle=True,
                     timeout=timeout,
                 )
             else:
-                page = self.stealthy_fetcher.fetch(
+                page = await asyncio.to_thread(
+                    self.stealthy_fetcher.fetch,
                     url,
                     headless=False,
                     timeout=timeout,
@@ -143,7 +146,9 @@ class BaseScraperWithScrapling(ABC):
             Scrapling.Page object
         """
         try:
-            page = self.dynamic_fetcher.fetch(
+            # Envolver sync call en asyncio.to_thread() para no bloquear event loop
+            page = await asyncio.to_thread(
+                self.dynamic_fetcher.fetch,
                 url,
                 headless=True,
                 network_idle=True,
@@ -151,8 +156,12 @@ class BaseScraperWithScrapling(ABC):
             )
 
             if wait_for_selector:
-                # Esperar a que elemento específico cargue
-                page.wait_for_selector(wait_for_selector, timeout=timeout)
+                # Esperar a que elemento específico cargue (también wrapped en thread)
+                await asyncio.to_thread(
+                    page.wait_for_selector,
+                    wait_for_selector,
+                    timeout=timeout,
+                )
 
             logger.debug(
                 "Scrapling dynamic fetch successful",
@@ -188,7 +197,9 @@ class BaseScraperWithScrapling(ABC):
             Scrapling.Page object
         """
         try:
-            page = self.stealthy_fetcher.fetch(
+            # Envolver sync call en asyncio.to_thread() para no bloquear event loop
+            page = await asyncio.to_thread(
+                self.stealthy_fetcher.fetch,
                 url,
                 headless=False,  # Simular browser visible (más evasivo)
                 timeout=timeout,

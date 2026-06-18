@@ -1,0 +1,312 @@
+═══════════════════════════════════════════════════════════════════════════════
+GRANTS.GOV RETRY FLOW — VISUAL DIAGRAM
+═══════════════════════════════════════════════════════════════════════════════
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ENTRY POINT: fetch_raw()                                                     │
+└────────────────────────────────────┬────────────────────────────────────────┘
+                                      │
+                    ┌─────────────────┴─────────────────┐
+                    │                                   │
+          ┌─────────▼──────────┐           ┌────────────▼────────────┐
+          │ Try: _fetch_api()  │           │ On Error: _fetch_web()  │
+          │ (Official API)     │           │ (Fallback HTML parsing) │
+          └─────────┬──────────┘           └────────────▲────────────┘
+                    │                                   │
+                    │                                   │
+          ┌─────────▼─────────────────────────────────┐ │
+          │ For each SEARCH_TERM in SEARCH_TERMS     │ │
+          │ (7 keywords: ECD, educación inicial...)  │ │
+          └──────────┬────────────────────────────────┘ │
+                     │                                   │
+          ┌──────────▼────────────────────────────────┐ │
+          │ For each PAGE in 1..3                     │ │
+          │ (Paginate through results)                │ │
+          └──────────┬────────────────────────────────┘ │
+                     │                                   │
+          ┌──────────▼────────────────────────────────┐ │
+          │ _fetch_with_retry(url, params, timeout)  │◄┼─ CORE RETRY LOGIC
+          └──────────┬────────────────────────────────┘ │
+                     │                                   │
+        ┌────────────┴─────────────────────────────────┐
+        │                                               │
+        │  ┌─────────────────────────────────────────┐ │
+        │  │ ATTEMPT LOOP (max 4 retries)            │ │
+        │  ├─────────────────────────────────────────┤ │
+        │  │                                         │ │
+        │  │ Attempt 1:                              │ │
+        │  │ ─────────────────────────────────────── │ │
+        │  │ User-Agent = random.choice(6 options)   │ │
+        │  │ Referer = random.choice(4 options)      │ │
+        │  │ Headers = {Accept, Accept-Language...}  │ │
+        │  │                                         │ │
+        │  │ GET https://api.grants.gov/v1/search2   │ │
+        │  │ + params (searchString, pageNumber)     │ │
+        │  │ + timeout (30 seconds)                  │ │
+        │  │                                         │ │
+        │  │ Response check:                         │ │
+        │  │ ├─ If status_code == 200:               │ │
+        │  │ │  └─ ✅ SUCCESS → Return response      │ │
+        │  │ │                 (NO retry needed)     │ │
+        │  │ │                                       │ │
+        │  │ ├─ If status_code == 403:               │ │
+        │  │ │  └─ ⚠️  Forbidden → Continue retry     │ │
+        │  │ │                                       │ │
+        │  │ ├─ If status_code == 5xx:               │ │
+        │  │ │  └─ ⚠️  Server error → Continue retry  │ │
+        │  │ │                                       │ │
+        │  │ └─ If exception (timeout, conn error):  │ │
+        │  │    └─ ⚠️  Error → Continue retry         │ │
+        │  │                                         │ │
+        │  │ ┌─────────────────────────────────────┐ │ │
+        │  │ │ Wait before next retry (if needed): │ │ │
+        │  │ ├─────────────────────────────────────┤ │ │
+        │  │ │ Backoff = 2 ^ attempt_number        │ │ │
+        │  │ │                                     │ │ │
+        │  │ │ After Attempt 1 fail:   Wait 1 s   │ │ │
+        │  │ │ After Attempt 2 fail:   Wait 2 s   │ │ │
+        │  │ │ After Attempt 3 fail:   Wait 4 s   │ │ │
+        │  │ │ After Attempt 4 fail:   No wait    │ │ │
+        │  │ │                                     │ │ │
+        │  │ └─────────────────────────────────────┘ │ │
+        │  │                                         │ │
+        │  │ Attempt 2: (if needed)                  │ │
+        │  │ User-Agent = random.choice(6 options)   │ │
+        │  │                    ↑                    │ │
+        │  │               (different)               │ │
+        │  │ GET ... → [repeat flow] ...             │ │
+        │  │                                         │ │
+        │  │ ... [Attempts 3, 4 similar] ...         │ │
+        │  │                                         │ │
+        │  └─────────────────────────────────────────┘ │
+        │                                               │
+        └───────────────────────────────────────────────┘
+                      │
+                      │
+        ┌─────────────▼──────────────┐
+        │ Final status check:         │
+        ├────────────────────────────┤
+        │                            │
+        │ If ANY attempt == 200:     │
+        │   ├─ Parse JSON            │
+        │   ├─ Extract opportunities │
+        │   ├─ Add to items[]        │
+        │   ├─ Add rate limit 0.5s   │
+        │   └─ Continue loop (next   │
+        │       page/term)           │
+        │                            │
+        │ If ALL attempts failed:    │
+        │   ├─ Log error             │
+        │   ├─ Break page loop       │
+        │   └─ Continue next term    │
+        │                            │
+        └─────────────┬──────────────┘
+                      │
+                      │
+        ┌─────────────▼──────────────┐
+        │ Rate limiting:             │
+        ├────────────────────────────┤
+        │ Between pages: 0.5 seconds │
+        │ Between terms:  1 second   │
+        │ Between retries: exponential│
+        └─────────────┬──────────────┘
+                      │
+                      │
+        ┌─────────────▼──────────────┐
+        │ Return: items[]            │
+        │ (list of opportunities)    │
+        └────────────┬───────────────┘
+                     │
+        ┌────────────▼────────────────────────────────┐
+        │ If items[] is empty or error:               │
+        │ Trigger FALLBACK: _fetch_web_scrapling()    │
+        │ (Last resort HTML parsing with Scrapling)   │
+        └────────────┬────────────────────────────────┘
+                     │
+                     │
+        ┌────────────▼────────────────────────────────┐
+        │ Final return: items[] to normalize()        │
+        │ (Convert to OpportunityCreate objects)      │
+        └────────────┬────────────────────────────────┘
+                     │
+                     │
+        ┌────────────▼────────────────────────────────┐
+        │ END: Items ready for scoring & storage      │
+        └─────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+TIMELINE EXAMPLE: Multiple failures with backoff
+═══════════════════════════════════════════════════════════════════════════════
+
+Timeline: Searching for "early childhood education", Page 1
+
+T=0ms      ┌─ START: _fetch_with_retry()
+           │
+T=50ms     ├─ Attempt 1: GET
+           │  Headers: User-Agent=Chrome/121, Referer=google.com
+           │  Response: 403 Forbidden ❌
+           │
+T=100ms    ├─ Log: "GrantsGov API 403 Forbidden (attempt 1/4)"
+           │
+T=1100ms   ├─ Wait 1 second [backoff = 2^0 = 1]
+           │
+T=1150ms   ├─ Attempt 2: GET
+           │  Headers: User-Agent=Firefox/121, Referer=bing.com
+           │           ↑ (different headers)
+           │  Response: 500 Server Error ❌
+           │
+T=1200ms   ├─ Log: "GrantsGov API non-200 status 500 (attempt 2/4)"
+           │
+T=3200ms   ├─ Wait 2 seconds [backoff = 2^1 = 2]
+           │
+T=3250ms   ├─ Attempt 3: GET
+           │  Headers: User-Agent=Safari/605, Referer=yahoo.com
+           │  Response: Connection timeout ❌
+           │
+T=3300ms   ├─ Log: "GrantsGov API timeout (attempt 3/4)"
+           │
+T=7300ms   ├─ Wait 4 seconds [backoff = 2^2 = 4]
+           │
+T=7350ms   ├─ Attempt 4: GET
+           │  Headers: User-Agent=Edge/121, Referer=grants.gov
+           │  Response: 403 Forbidden ❌
+           │
+T=7400ms   ├─ Log: "GrantsGov API failed after all retries"
+           │
+T=7450ms   └─ Return: None (failed)
+
+Total time: ~7.5 seconds (for this one page)
+Success rate: 0/4 attempts failed
+Next action: Break page loop, try next search term (or fallback to web)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+COMPARISON: With vs Without Retry
+═══════════════════════════════════════════════════════════════════════════════
+
+WITHOUT RETRY (old code):
+───────────────────────
+T=0ms    ├─ GET → 403 Forbidden
+T=50ms   └─ ❌ FAIL (immediate abort, no fallback)
+         └─ Result: No items from Grants.gov this cycle
+
+Total time: ~50ms
+Success rate: 0%
+Items fetched: 0
+
+
+WITH RETRY (new code):
+──────────────────────
+T=0ms    ├─ GET → 403 Forbidden
+T=1100ms ├─ GET → 500 Server Error
+T=3200ms ├─ GET → Connection timeout
+T=7300ms ├─ GET → 403 Forbidden
+T=7400ms ├─ Fallback: _fetch_web_scrapling() → Success! ✅
+T=7600ms └─ Result: Items from web scraping
+
+Total time: ~8 seconds (but items obtained!)
+Success rate: 100% (via fallback)
+Items fetched: N (from web scraping)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+LOGGING OUTPUT: Full execution trace
+═══════════════════════════════════════════════════════════════════════════════
+
+DEBUG | GrantsGov API attempt
+      |   attempt=1/4
+      |   user_agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+      |   url=https://api.grants.gov/v1/api/search2?searchString=early%20childhood...
+      |   max_retries=4
+
+WARNING | GrantsGov API 403 Forbidden
+        |   attempt=1/4
+        |   url=https://api.grants.gov/v1/api/search2?searchString=early%20childhood...
+
+INFO | GrantsGov backoff wait
+     |   attempt=1/4
+     |   wait_seconds=1
+
+DEBUG | GrantsGov API attempt
+      |   attempt=2/4
+      |   user_agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+      |   url=https://api.grants.gov/v1/api/search2?searchString=early%20childhood...
+      |   max_retries=4
+
+WARNING | GrantsGov API 403 Forbidden
+        |   attempt=2/4
+        |   url=https://api.grants.gov/v1/api/search2?searchString=early%20childhood...
+
+INFO | GrantsGov backoff wait
+     |   attempt=2/4
+     |   wait_seconds=2
+
+... (attempts 3, 4 similar) ...
+
+ERROR | GrantsGov API failed after all retries
+      |   max_retries=4
+      |   url=https://api.grants.gov/v1/api/search2?searchString=early%20childhood...
+
+INFO | GrantsGov web scraping successful
+     |   count=42
+
+
+═══════════════════════════════════════════════════════════════════════════════
+KEY PARAMETERS
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│ Configuration                                                    │
+├─────────────────────────────────────────────────────────────────┤
+│ max_retries            = 4              (attempts before fail)   │
+│ initial_backoff        = 1              (seconds)                │
+│ backoff_multiplier     = 2              (exponential: 2^attempt) │
+│ max_backoff            = 8              (final wait time)        │
+│                                                                  │
+│ rate_limit_page        = 0.5            (seconds between pages)  │
+│ rate_limit_term        = 1.0            (seconds between terms)  │
+│                                                                  │
+│ timeout_per_request    = 30             (seconds)                │
+│                                                                  │
+│ user_agent_pool_size   = 6              (different browsers)     │
+│ referer_pool_size      = 4              (different sources)      │
+│                                                                  │
+│ search_terms           = 7              (keywords to search)     │
+│ pages_per_term         = 3              (pagination)             │
+│                                                                  │
+│ Max total requests     = 7 × 3 × 4     = 84  (if all fail)      │
+│ Max total wait time    = 7 × (1+2+4+8) ≈ 105 seconds            │
+└─────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+SUCCESS CRITERIA
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ GREEN:
+  • Success on first attempt: ≥95%
+  • Retry rate: <5%
+  • Fallback rate: <1%
+  • Avg response time: <2 seconds
+  • Test coverage: >95%
+
+⚠️  YELLOW:
+  • Success on first attempt: 80-95%
+  • Retry rate: 5-15%
+  • Fallback rate: 1-5%
+  • Avg response time: 2-5 seconds
+
+❌ RED:
+  • Success on first attempt: <80%
+  • Retry rate: >15%
+  • Fallback rate: >5%
+  • Avg response time: >10 seconds
+  • Test coverage: <90%
+
+
+═══════════════════════════════════════════════════════════════════════════════
+Generated: 2026-06-18
+Status: Complete
+═══════════════════════════════════════════════════════════════════════════════

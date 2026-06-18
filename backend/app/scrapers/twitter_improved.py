@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import random
 import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -97,6 +99,24 @@ TWITTER_SEARCH_QUERIES_GLOBAL = [
 ]
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# UTILIDADES DE PROXY Y DELAY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _get_proxy_config() -> dict[str, str | None]:
+    """Obtener configuración de proxy desde variables de entorno.
+
+    Retorna: {"proxies": "http://user:pass@proxy:port" | None}
+    Si PROXY_URL no está configurado, devuelve None (sin proxy).
+    """
+    proxy_url = os.getenv("PROXY_URL")
+    if proxy_url:
+        logger.info("Using proxy for Twitter scraping", proxy=proxy_url[:20] + "...")
+        return {"proxies": proxy_url}
+    logger.warning("PROXY_URL not configured - Twitter scraping without proxy may be blocked")
+    return {}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # ESTRATEGIA 1: Twitter API v2 (requiere Bearer token)
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -118,6 +138,9 @@ async def fetch_twitter_api_v2(
         logger.debug("Twitter API v2 token not configured, skipping")
         return []
 
+    # Delay aleatorio 2-5 segundos antes de hacer request
+    await asyncio.sleep(random.uniform(2, 5))
+
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         "User-Agent": "GrantFlow-AI/1.0",
@@ -132,7 +155,8 @@ async def fetch_twitter_api_v2(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        proxy_config = _get_proxy_config()
+        async with httpx.AsyncClient(timeout=15, **proxy_config) as client:
             resp = await client.get(
                 TWITTER_API_V2_URL,
                 headers=headers,
@@ -211,6 +235,9 @@ async def fetch_twitter_accounts(
 
     for username in TWITTER_ACCOUNTS_TO_MONITOR:
         try:
+            # Delay aleatorio 2-5 segundos entre requests
+            await asyncio.sleep(random.uniform(2, 5))
+
             # Buscar tweets de esta cuenta
             query = f"from:{username}"
             params = {
@@ -221,7 +248,8 @@ async def fetch_twitter_accounts(
                 "user.fields": "verified,location",
             }
 
-            async with httpx.AsyncClient(timeout=10) as client:
+            proxy_config = _get_proxy_config()
+            async with httpx.AsyncClient(timeout=10, **proxy_config) as client:
                 resp = await client.get(
                     TWITTER_API_V2_URL,
                     headers=headers,
@@ -262,8 +290,6 @@ async def fetch_twitter_accounts(
                         "type": "institutional_tweet",
                     })
 
-            await asyncio.sleep(0.5)  # Rate limiting
-
         except Exception as e:
             logger.debug("Twitter account monitoring error", username=username, error=str(e)[:100])
             continue
@@ -292,6 +318,9 @@ async def fetch_twitter_google_news() -> list[dict[str, Any]]:
     for queries, market_window in search_batches:
         for query in queries:
             try:
+                # Delay aleatorio 2-5 segundos entre requests
+                await asyncio.sleep(random.uniform(2, 5))
+
                 # Construir búsqueda
                 search_query = f"site:twitter.com OR site:x.com {query}"
                 params = {
@@ -299,7 +328,8 @@ async def fetch_twitter_google_news() -> list[dict[str, Any]]:
                     "tbm": "nws",  # News tab
                 }
 
-                async with httpx.AsyncClient(timeout=15) as client:
+                proxy_config = _get_proxy_config()
+                async with httpx.AsyncClient(timeout=15, **proxy_config) as client:
                     resp = await client.get(
                         "https://www.google.com/search",
                         params=params,
@@ -335,8 +365,6 @@ async def fetch_twitter_google_news() -> list[dict[str, Any]]:
                                 "type": "public_search",
                                 "market_window": market_window,  # Nacional o Global
                             })
-
-                    await asyncio.sleep(0.5)  # Rate limiting
 
             except Exception as e:
                 logger.debug(
@@ -377,10 +405,9 @@ class TwitterScraperImproved(BaseScraper):
 
         # Estrategia 1: Twitter API v2
         if bearer_token:
-            for query in TWITTER_SEARCH_QUERIES:
+            for query in TWITTER_SEARCH_QUERIES_NACIONAL + TWITTER_SEARCH_QUERIES_GLOBAL:
                 items = await fetch_twitter_api_v2(query, bearer_token)
                 all_items.extend(items)
-                await asyncio.sleep(0.5)
 
             # Estrategia 2: Monitorear cuentas
             items = await fetch_twitter_accounts(bearer_token)

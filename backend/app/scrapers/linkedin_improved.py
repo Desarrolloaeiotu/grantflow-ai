@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import random
 from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode
@@ -164,11 +166,31 @@ class LinkedInScraperImproved(BaseScraper):
         self.user_agent_idx += 1
         return ua
 
+    def _get_proxy_config(self) -> dict[str, str | None]:
+        """Obtener configuración de proxy desde variables de entorno.
+
+        Retorna: {"proxies": "http://user:pass@proxy:port" | None}
+        Si PROXY_URL no está configurado, devuelve None (sin proxy).
+        """
+        proxy_url = os.getenv("PROXY_URL")
+        if proxy_url:
+            logger.info("Using proxy for LinkedIn scraping", proxy=proxy_url[:20] + "...")
+            return {"proxies": proxy_url}
+        logger.warning("PROXY_URL not configured - LinkedIn scraping without proxy may be blocked")
+        return {}
+
     async def fetch_raw(self) -> list[dict[str, Any]]:
-        """Fetch usando 3 estrategias en paralelo con fallback."""
+        """Fetch usando 3 estrategias en paralelo con fallback y soporte de proxy."""
         all_items: list[dict[str, Any]] = []
 
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+        # Obtener configuración de proxy
+        proxy_config = self._get_proxy_config()
+
+        async with httpx.AsyncClient(
+            timeout=30,
+            follow_redirects=True,
+            **proxy_config  # Pasar proxies si está disponible
+        ) as client:
             # Ejecutar 3 estrategias en paralelo
             results = await asyncio.gather(
                 self._fetch_jobs_api(client),
@@ -193,6 +215,9 @@ class LinkedInScraperImproved(BaseScraper):
 
         for search in LINKEDIN_JOB_SEARCHES:
             try:
+                # Delay aleatorio 2-5 segundos entre requests
+                await asyncio.sleep(random.uniform(2, 5))
+
                 # Parámetros para LinkedIn Jobs API
                 params = {
                     "keywords": search["keywords"],
@@ -248,9 +273,6 @@ class LinkedInScraperImproved(BaseScraper):
                 logger.debug("LinkedIn Jobs API error", error=str(e)[:100])
                 continue
 
-            # Rate limiting
-            await asyncio.sleep(1)
-
         return items
 
     async def _scrape_jobs_html(self, html: str) -> list[dict[str, Any]]:
@@ -300,6 +322,9 @@ class LinkedInScraperImproved(BaseScraper):
 
         for company_url in LINKEDIN_COMPANY_PAGES:
             try:
+                # Delay aleatorio 2-5 segundos entre requests
+                await asyncio.sleep(random.uniform(2, 5))
+
                 # Obtener página de empresa
                 headers = {"User-Agent": self._get_user_agent()}
                 resp = await client.get(company_url, headers=headers)
@@ -330,8 +355,6 @@ class LinkedInScraperImproved(BaseScraper):
                             "type": "company_announcement",
                         })
 
-                await asyncio.sleep(1)
-
             except Exception as e:
                 logger.debug("Company page scraping failed", url=company_url, error=str(e)[:100])
                 continue
@@ -354,6 +377,9 @@ class LinkedInScraperImproved(BaseScraper):
         for queries, market_window in search_batches:
             for query in queries:
                 try:
+                    # Delay aleatorio 2-5 segundos entre requests
+                    await asyncio.sleep(random.uniform(2, 5))
+
                     headers = {
                         "User-Agent": self._get_user_agent(),
                         "Accept-Language": "es-ES,es;q=0.9",
@@ -389,8 +415,6 @@ class LinkedInScraperImproved(BaseScraper):
                                 "type": "public_search",
                                 "market_window": market_window,  # Nacional o Global
                             })
-
-                    await asyncio.sleep(0.5)  # Rate limiting
 
                 except Exception as e:
                     logger.debug(
