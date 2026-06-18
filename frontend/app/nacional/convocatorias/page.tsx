@@ -25,21 +25,21 @@ export default function NacionalConvocatoriasPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams({
-        region: "nacional",
+        window: "funding_colombia",
         page: page.toString(),
-        size: "10",
+        size: "25",
       })
 
       if (filters.decision) params.append("decision", filters.decision)
       if (filters.days_to_deadline) params.append("days_to_deadline", filters.days_to_deadline.toString())
 
-      const res = await fetch(`${API_URL}/api/v1/tenders?${params}`)
+      const res = await fetch(`${API_URL}/api/v1/opportunities?${params}`)
       const data: ApiListResponse<Tender> = await res.json()
 
       setTenders(data.items)
       setTotal(data.total)
     } catch (error) {
-      console.error("Error fetching tenders:", error)
+      console.error("Error fetching opportunities:", error)
     } finally {
       setLoading(false)
     }
@@ -47,7 +47,7 @@ export default function NacionalConvocatoriasPage() {
 
   async function handleExport() {
     try {
-      const res = await fetch(`${API_URL}/api/v1/tenders/export?region=nacional`)
+      const res = await fetch(`${API_URL}/api/v1/opportunities/export?window=funding_colombia`)
       const data = await res.json()
       const csv = atob(data.content_base64)
       const blob = new Blob([csv], { type: "text/csv" })

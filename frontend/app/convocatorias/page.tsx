@@ -69,10 +69,11 @@ export default function ConvocatoriasGlobalPage() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [decision, setDecision] = useState<string>("")
+  const [window, setWindow] = useState<string>("funding_global")
 
   useEffect(() => {
     fetchTenders()
-  }, [page, decision])
+  }, [page, decision, window])
 
   async function fetchTenders() {
     setLoading(true)
@@ -80,12 +81,13 @@ export default function ConvocatoriasGlobalPage() {
       const params = new URLSearchParams({
         page: page.toString(),
         size: "25",
-        region: "global",
+        window: window,
       })
 
       if (decision) params.append("decision", decision)
 
-      const res = await fetch(`${API_URL}/api/v1/tenders?${params}`)
+      // Changed from /tenders to /opportunities
+      const res = await fetch(`${API_URL}/api/v1/opportunities?${params}`)
       if (!res.ok) throw new Error(`API error: ${res.status}`)
 
       const data: ApiListResponse<Tender> = await res.json()
@@ -93,7 +95,7 @@ export default function ConvocatoriasGlobalPage() {
       setTenders(data.items || [])
       setTotal(data.total || 0)
     } catch (error) {
-      console.error("Error fetching tenders:", error)
+      console.error("Error fetching opportunities:", error)
       setTenders([])
       setTotal(0)
     } finally {
@@ -103,7 +105,7 @@ export default function ConvocatoriasGlobalPage() {
 
   async function handleExport() {
     try {
-      const res = await fetch(`${API_URL}/api/v1/tenders/export/csv?region=global`)
+      const res = await fetch(`${API_URL}/api/v1/opportunities/export?window=funding_global`)
       const data = await res.json()
       const csv = atob(data.content_base64)
       const blob = new Blob([csv], { type: "text/csv" })
