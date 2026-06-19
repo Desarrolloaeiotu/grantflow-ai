@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -264,15 +265,18 @@ export default function ConvocacionesPage() {
               const daysLeft = daysUntilDeadline(conv.deadline)
 
               return (
-                <div key={conv.id} className="convocation-card" style={{
-                  background: 'var(--bg)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--r)',
-                  padding: '16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                }}>
+                <Link key={conv.id} href={`/convocaciones/${conv.id}`} style={{ textDecoration: 'none' }}>
+                  <div className="convocation-card" style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--r)',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    cursor: 'pointer',
+                    height: '100%'
+                  }}>
                   {/* Header: Tipo + Completitud */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                     <div style={{ flex: 1 }}>
@@ -388,8 +392,9 @@ export default function ConvocacionesPage() {
                         TOR
                       </a>
                     )}
+                    </div>
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
