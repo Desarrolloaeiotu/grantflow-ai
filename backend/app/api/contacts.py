@@ -2,6 +2,7 @@ import base64
 import csv
 import io
 import uuid
+from enum import Enum
 from typing import Optional
 
 import structlog
@@ -18,6 +19,103 @@ from app.schemas.contact import ContactRead, ContactList, EmailVerifyRequest, Ke
 
 logger = structlog.get_logger()
 router = APIRouter()
+
+
+class RoleCategory(str, Enum):
+    """Role categories for contacts."""
+    PARTNERSHIPS = "partnerships"
+    GRANTS = "grants"
+    COOPERATION = "cooperation"
+    INNOVATION = "innovation"
+    DEVELOPMENT = "development"
+
+
+@router.get("/by-role", response_model=ContactList)
+async def list_contacts_by_role(
+    role_category: str = Query(..., description="partnerships | grants | cooperation | innovation | development"),
+    priority_min: int = Query(1, ge=1, le=5, description="Minimum priority score (1-5)"),
+    funder_id: uuid.UUID | None = Query(None, description="Filter by funder ID"),
+    country: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    size: int = Query(25, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+) -> ContactList:
+    """List key contacts filtered by role category and priority score.
+
+    This endpoint is optimized for finding key decision-makers and contacts
+    by their role in the organization and relevance to aeioTU.
+
+    Query params:
+    - role_category: (required) partnerships | grants | cooperation | innovation | development
+    - priority_min: Minimum priority score (1-5). Default: 1. Higher = more relevant to aeioTU
+    - funder_id: Optional filter by funder ID
+    - country: Optional filter by funder country (e.g., 'Colombia')
+    - page: Pagination (default: 1)
+    - size: Results per page (default: 25, max: 100)
+    """
+    try:
+        # Validate role_category
+        RoleCategory(role_category)
+    except ValueError:
+        valid_roles = [r.value for r in RoleCategory]
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid role_category. Must be one of: {', '.join(valid_roles)}"
+        )
+
+    filters = [Contact.role_category == role_category]
+
+    if priority_min and priority_min >= 1:
+        filters.append(Contact.priority_score >= priority_min)
+    if funder_id:
+        filters.append(Contact.funder_id == funder_id)
+    if country:
+        filters.append(Funder.country == country)
+
+    # Build count query
+    count_q = select(func.count(Contact.id))
+    if country:
+        count_q = count_q.join(Funder)
+    if filters:
+        count_q = count_q.where(and_(*filters))
+    total = (await db.execute(count_q)).scalar() or 0
+
+    # Build data query
+    q = select(Contact)
+    if country:
+        q = q.join(Funder)
+    if filters:
+        q = q.where(and_(*filters))
+    q = q.options(selectinload(Contact.funder))
+    q = q.order_by(Contact.priority_score.desc(), Contact.fetched_at.desc())
+    q = q.offset((page - 1) * size).limit(size)
+
+    result = await db.execute(q)
+    rows = result.scalars().unique().all()
+
+    items = [
+        KeyContactRead(
+            id=c.id,
+            full_name=c.full_name,
+            last_name=c.last_name,
+            title=c.title,
+            role_category=c.role_category,
+            email=c.email,
+            linkedin_url=c.linkedin_url,
+            funder_name=c.funder.name if c.funder else None,
+        )
+        for c in rows
+    ]
+
+    logger.info(
+        "Listed contacts by role",
+        role_category=role_category,
+        priority_min=priority_min,
+        total=total,
+        returned=len(items)
+    )
+
+    return ContactList(items=items, total=total, page=page, size=size)
 
 
 @router.get("", response_model=ContactList)
