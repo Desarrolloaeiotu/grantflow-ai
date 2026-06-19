@@ -28,6 +28,7 @@ async def list_organizations(
     invests_latam: Optional[bool] = None,
     access_type: Optional[str] = None,
     search: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """List organizations with optional filters.
 
@@ -37,15 +38,79 @@ async def list_organizations(
     - invests_latam: Filter by Latam investment
     - access_type: convocatoria | mixto | relacional | invitacion
     - search: Search by name, website, or objective
-
-    NOTE: Currently returns mock data for development. Connects to Supabase when available.
     """
-    # Import extended mock data with global organizations
-    from app.mock_data import MOCK_ORGANIZATIONS_EXTENDED
-    MOCK_ORGANIZATIONS = MOCK_ORGANIZATIONS_EXTENDED
+    # Build query from database
+    query = select(Funder)
 
-    # Filter mock data
-    filtered = MOCK_ORGANIZATIONS
+    # Apply filters
+    if country:
+        query = query.where(Funder.country == country)
+    if invests_colombia is not None:
+        query = query.where(Funder.invests_colombia == invests_colombia)
+    if invests_latam is not None:
+        query = query.where(Funder.invests_latam == invests_latam)
+    if access_type:
+        query = query.where(Funder.access_type == access_type)
+    if search:
+        query = query.where(
+            or_(
+                Funder.name.ilike(f"%{search}%"),
+                Funder.general_objective.ilike(f"%{search}%"),
+                Funder.website.ilike(f"%{search}%"),
+            )
+        )
+
+    # Get total count
+    count_query = select(func.count(Funder.id))
+    if country:
+        count_query = count_query.where(Funder.country == country)
+    if invests_colombia is not None:
+        count_query = count_query.where(Funder.invests_colombia == invests_colombia)
+    if invests_latam is not None:
+        count_query = count_query.where(Funder.invests_latam == invests_latam)
+    if access_type:
+        count_query = count_query.where(Funder.access_type == access_type)
+    if search:
+        count_query = count_query.where(
+            or_(
+                Funder.name.ilike(f"%{search}%"),
+                Funder.general_objective.ilike(f"%{search}%"),
+                Funder.website.ilike(f"%{search}%"),
+            )
+        )
+
+    total = (await db.execute(count_query)).scalar() or 0
+
+    # Pagination
+    query = query.offset((page - 1) * size).limit(size)
+    result = await db.execute(query)
+    organizations = result.scalars().all()
+
+    # Convert to dict format
+    items = [
+        {
+            "id": str(org.id),
+            "name": org.name,
+            "country": org.country,
+            "org_type": org.org_type,
+            "focus_sectors": org.focus_sectors,
+            "website": org.website,
+            "has_history": org.has_history,
+            "access_type": org.access_type,
+            "invests_colombia": org.invests_colombia,
+            "invests_latam": org.invests_latam,
+            "general_objective": org.general_objective,
+            "linkedin_url": org.linkedin_url,
+            "min_grant_cop": org.min_grant_cop,
+            "max_grant_cop": org.max_grant_cop,
+        }
+        for org in organizations
+    ]
+
+    return {"items": items, "total": total, "page": page, "size": size}
+
+    # Legacy mock data filtering (kept for reference but no longer used)
+    filtered = []
 
     if country:
         filtered = [o for o in filtered if o.get("country", "").lower() == country.lower()]
