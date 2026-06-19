@@ -388,6 +388,104 @@ class TwitterScraperImproved(BaseScraper):
     base_url = "https://twitter.com"
     schedule = "0 8 * * *"  # 8am diario
 
+    async def extract_key_contacts(self, profile_data: dict) -> list[dict]:
+        """Extract organization + key contacts from Twitter accounts.
+
+        Busca cuentas y perfiles asociados a organizaciones de financiamiento
+        detectadas en Twitter/X. Identifica tweets de contactos clave.
+
+        Returns:
+            [{
+                "organization": {
+                    "name": str,
+                    "twitter_handle": str,
+                    "website": str | None,
+                    "source": "twitter"
+                },
+                "contacts": [
+                    {
+                        "full_name": str,
+                        "title": str,
+                        "twitter_handle": str,
+                        "twitter_url": str,
+                        "priority_score": int,  # 2-5
+                        "department": str,
+                        "recent_tweets": list[str]
+                    }
+                ]
+            }]
+        """
+        RELEVANT_ROLES = {
+            "partnerships", "strategic partnerships", "alliances",
+            "global partnerships", "institutional relations", "external relations",
+            "business development", "program manager", "program director",
+            "grants manager", "philanthropy", "development officer",
+            "impact investing", "cooperation", "international cooperation",
+            "innovation", "ecosystem lead", "network lead"
+        }
+
+        contacts = []
+        org_name = profile_data.get("organization", "") or profile_data.get("name", "")
+        org_twitter = profile_data.get("twitter_handle", "")
+        org_website = profile_data.get("website")
+
+        for person in profile_data.get("associated_accounts", []):
+            title = (person.get("title") or "").lower()
+            if any(kw in title for kw in RELEVANT_ROLES):
+                contacts.append({
+                    "full_name": person.get("name", ""),
+                    "title": person.get("title", ""),
+                    "twitter_handle": person.get("twitter_handle"),
+                    "twitter_url": f"https://twitter.com/{person.get('twitter_handle')}" if person.get("twitter_handle") else None,
+                    "priority_score": self._calculate_role_priority(title),
+                    "department": self._categorize_role(title),
+                    "recent_tweets": person.get("recent_tweets", [])[:3],
+                })
+
+        if contacts:
+            return [{
+                "organization": {
+                    "name": org_name,
+                    "twitter_handle": org_twitter,
+                    "website": org_website,
+                    "source": "twitter",
+                },
+                "contacts": contacts,
+            }]
+        return []
+
+    def _calculate_role_priority(self, title: str) -> int:
+        """Calcular prioridad del contacto basado en su rol.
+
+        5 = Partnerships/Grants (máxima prioridad)
+        4 = Business Development / Innovation
+        3 = Director / Manager
+        2 = Otros roles relacionados
+        """
+        title_lower = title.lower()
+        if "partnership" in title_lower or "grant" in title_lower:
+            return 5
+        elif "business development" in title_lower or "innovation" in title_lower:
+            return 4
+        elif "director" in title_lower or "manager" in title_lower:
+            return 3
+        else:
+            return 2
+
+    def _categorize_role(self, title: str) -> str:
+        """Categorizar el rol del contacto para búsquedas futuras."""
+        title_lower = title.lower()
+        if "partnership" in title_lower:
+            return "partnerships"
+        elif "grant" in title_lower:
+            return "grants"
+        elif "cooperat" in title_lower:
+            return "cooperation"
+        elif "innovat" in title_lower:
+            return "innovation"
+        else:
+            return "development"
+
     async def fetch_raw(self) -> list[dict[str, Any]]:
         """Fetch usando 3 estrategias con fallback.
 

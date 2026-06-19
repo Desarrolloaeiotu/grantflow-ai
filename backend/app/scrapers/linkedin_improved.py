@@ -432,6 +432,95 @@ class LinkedInScraperImproved(BaseScraper):
         text_lower = text.lower()
         return any(kw.lower() in text_lower for kw in LINKEDIN_KEYWORDS_CORE)
 
+    async def extract_key_contacts(self, profile_data: dict) -> list[dict]:
+        """Extract organization + key contacts from LinkedIn search results.
+
+        Busca roles estratégicos (partnerships, grants, cooperación, etc) dentro
+        de organizaciones encontradas en búsquedas de LinkedIn.
+
+        Returns:
+            [{
+                "organization": {"name": str, "website": str, "source": "linkedin"},
+                "contacts": [
+                    {
+                        "full_name": str,
+                        "title": str,
+                        "email": str | None,
+                        "linkedin_url": str,
+                        "priority_score": int,  # 2-5
+                        "department": str
+                    }
+                ]
+            }]
+        """
+        RELEVANT_ROLES = {
+            "partnerships", "strategic partnerships", "alliances",
+            "global partnerships", "institutional relations", "external relations",
+            "business development", "program manager", "program director",
+            "grants manager", "philanthropy", "development officer",
+            "impact investing", "cooperation", "international cooperation",
+            "innovation", "ecosystem lead", "network lead"
+        }
+
+        contacts = []
+        org_name = profile_data.get("organization", "")
+        org_url = profile_data.get("organization_url", "")
+
+        for person in profile_data.get("employees", []):
+            title = (person.get("title") or "").lower()
+            if any(kw in title for kw in RELEVANT_ROLES):
+                contacts.append({
+                    "full_name": person.get("name", ""),
+                    "title": person.get("title", ""),
+                    "email": person.get("email"),
+                    "linkedin_url": person.get("linkedin_url", ""),
+                    "priority_score": self._calculate_role_priority(title),
+                    "department": self._categorize_role(title),
+                })
+
+        if contacts:
+            return [{
+                "organization": {
+                    "name": org_name,
+                    "website": org_url,
+                    "source": "linkedin",
+                },
+                "contacts": contacts,
+            }]
+        return []
+
+    def _calculate_role_priority(self, title: str) -> int:
+        """Calcular prioridad del contacto basado en su rol.
+
+        5 = Partnerships/Grants (máxima prioridad)
+        4 = Business Development / Innovation
+        3 = Director / Manager
+        2 = Otros roles relacionados
+        """
+        title_lower = title.lower()
+        if "partnership" in title_lower or "grant" in title_lower:
+            return 5
+        elif "business development" in title_lower or "innovation" in title_lower:
+            return 4
+        elif "director" in title_lower or "manager" in title_lower:
+            return 3
+        else:
+            return 2
+
+    def _categorize_role(self, title: str) -> str:
+        """Categorizar el rol del contacto para búsquedas futuras."""
+        title_lower = title.lower()
+        if "partnership" in title_lower:
+            return "partnerships"
+        elif "grant" in title_lower:
+            return "grants"
+        elif "cooperat" in title_lower:
+            return "cooperation"
+        elif "innovat" in title_lower:
+            return "innovation"
+        else:
+            return "development"
+
     def normalize(self, raw: dict[str, Any]) -> OpportunityCreate | None:
         """Convertir raw LinkedIn item → OpportunityCreate."""
         title = raw.get("title", "").strip()
