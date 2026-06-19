@@ -22,8 +22,15 @@ async def list_convocations(
     source: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """List convocations with filtering and pagination"""
+    """List convocations with filtering and pagination.
+
+    By default, only shows active convocations (deadline >= today).
+    Use days_to_deadline to filter by upcoming deadlines.
+    """
     query = select(Convocation)
+
+    # MANDATORY: Only show future convocations (deadline >= today)
+    query = query.where(Convocation.deadline >= date.today())
 
     if type_:
         query = query.where(Convocation.type == type_)
@@ -75,9 +82,13 @@ async def export_convocations(
     days_to_deadline: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
 ):
-    """Export convocations as CSV"""
+    """Export convocations as CSV. Only includes future convocations (deadline >= today)."""
 
     query = select(Convocation)
+
+    # MANDATORY: Only export future convocations
+    query = query.where(Convocation.deadline >= date.today())
+
     if type_:
         query = query.where(Convocation.type == type_)
     if verified_only:
