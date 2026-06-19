@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from starlette.middleware.cors import CORSMiddleware
 
-from app.api import chat, contacts, dashboard, funders, monitor, opportunities, organizations, rag, scoring, scrape, scrapers_api, tenders
+from app.api import chat, contacts, dashboard, funders, global_organizations, monitor, opportunities, organizations, rag, scoring, scrape, scrapers_api, tenders
 from app.core.config import settings
 from app.core.database import engine
 from app.models import Base
@@ -60,6 +60,7 @@ app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboar
 app.include_router(funders.router, prefix="/api/v1/funders", tags=["funders"])
 app.include_router(contacts.router, prefix="/api/v1/contacts", tags=["contacts"])
 app.include_router(organizations.router, prefix="/api/v1/organizations", tags=["organizations"])
+app.include_router(global_organizations.router, prefix="/api/v1/global-organizations", tags=["global_organizations"])
 app.include_router(tenders.router, prefix="/api/v1/tenders", tags=["tenders"])
 app.include_router(scrapers_api.router, prefix="/api/v1", tags=["scrapers"])
 app.include_router(monitor.router, tags=["monitor"])
