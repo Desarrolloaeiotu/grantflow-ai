@@ -353,6 +353,9 @@ class RssFeedsScraper(BaseScraper):
             return None
 
     def normalize(self, raw: dict[str, Any]) -> OpportunityCreate | None:
+        from app.services.content_type_detector import detect_content_type, ContentType
+        from app.schemas.convocation import ConvocationCreate
+
         feed: FeedSource = raw["_feed"]
         entry: dict[str, Any] = raw["entry"]
 
@@ -371,31 +374,185 @@ class RssFeedsScraper(BaseScraper):
                 description = content
         description = _clean_html(str(description))[:5000]
 
-        haystack = (title + " " + description).lower()
+        url = (entry.get("link") or entry.get("id") or "").strip()
 
-        # Filtro: al menos 1 CORE_KEYWORD (aceptar sin GEO para feeds globales)
-        has_core = any(kw.lower() in haystack for kw in CORE_KEYWORDS)
-        if not has_core:
+        if not url:
             return None
 
-        url_rfp = entry.get("link") or entry.get("id")
-        deadline = _extract_deadline(entry, description)
+        # Step 1: Content-type detection — reject if not a convocatoria
+        content_result = detect_content_type({
+            "title": title,
+            "description": description,
+            "url": url,
+        })
+        if content_result.type != ContentType.CONVOCATORIA or content_result.confidence < 0.7:
+            logger.debug(
+                "Entry rejected: not a convocatoria",
+                title=title[:50],
+                detected_type=content_result.type,
+                confidence=round(content_result.confidence, 2),
+                reason=content_result.reason,
+            )
+            return None
+
+        # Step 2: Strict keyword filtering (AND logic)
+        haystack = (title + " " + description).lower()
+        has_core = any(kw.lower() in haystack for kw in CORE_KEYWORDS)
+        if not has_core:
+            logger.debug("Entry rejected: no CORE_KEYWORDS match", title=title[:50])
+            return None
+
+        # GEO filter is mandatory only for Colombia-specific feeds
+        if "colombia" in feed.name.lower():
+            has_geo = any(kw.lower() in haystack for kw in GEO_KEYWORDS)
+            if not has_geo:
+                logger.debug(
+                    "Entry rejected: no GEO_KEYWORDS match for Colombia feed",
+                    title=title[:50],
+                    feed=feed.name,
+                )
+                return None
+
+        # Parse open date from feed entry
+        published_parsed = entry.get("published_parsed")
+        if published_parsed:
+            try:
+                open_date = date(*published_parsed[:3])
+            except (TypeError, ValueError):
+                open_date = date.today()
+        else:
+            open_date = date.today()
+
+        # Extract deadline
+        deadline = self._extract_deadline(entry, description, open_date)
+        if not deadline or deadline <= open_date:
+            logger.debug(
+                "Entry rejected: no valid deadline",
+                title=title[:50],
+                deadline=str(deadline) if deadline else None,
+            )
+            return None
+
+        # Step 3: Validate against ConvocationCreate schema
+        try:
+            conv_data: dict[str, Any] = {
+                "title": title,
+                "objective": description[:5000] if description else title,
+                "type": self._detect_convocation_type(title, description),
+                "deadline": deadline,
+                "open_date": open_date,
+                "url_convocation": url,
+                "source_name": f"rss:{feed.name}",
+                "source_url": url,
+            }
+            ConvocationCreate(**conv_data)
+        except (ValueError, Exception) as exc:
+            logger.debug("Entry failed schema validation", title=title[:50], error=str(exc))
+            return None
+
+        # Extract amount if present
+        amount_cop = self._extract_amount_cop(title, description)
+
         funder_name = feed.funder_hint or _extract_author(entry)
 
         return OpportunityCreate(
             title=title,
             description=description if description else None,
             funder_name=funder_name,
+            amount_min_cop=amount_cop[0] if amount_cop else None,
+            amount_max_cop=amount_cop[1] if amount_cop else None,
             deadline=deadline,
-            url_rfp=url_rfp,
-            url_source=url_rfp or feed.url,
+            url_rfp=url,
+            url_source=url,
             source_name=f"rss:{feed.name}",
             org_website=feed.org_website,
             capital_type=feed.capital_type,
-            market_window="funding_global",
+            market_window="funding_global" if "global" in feed.name.lower() else "funding_colombia",
             sectors=_extract_categories(entry),
             raw_content=json.dumps({"feed": feed.name, "entry": entry}, default=str)[:10_000],
         )
+
+    def _extract_deadline(
+        self,
+        entry: dict[str, Any],
+        description: str,
+        open_date: date,
+    ) -> date | None:
+        """Extract deadline from entry text. Falls back to 30-day heuristic."""
+        from datetime import timedelta
+
+        # Delegate to the module-level extractor first (uses regex on text)
+        found = _extract_deadline(entry, description)
+        if found:
+            return found
+
+        # Heuristic: if deadline keyword exists without a parseable date, estimate 30 days
+        import re
+        deadline_hint = re.search(
+            r"(?:deadline|cierre|fecha límite|due|closes?|vence)",
+            description,
+            re.IGNORECASE,
+        )
+        if deadline_hint:
+            return open_date + timedelta(days=30)
+
+        return None
+
+    def _extract_amount_cop(
+        self, title: str, description: str
+    ) -> tuple[int, int] | None:
+        """Extract amount range in COP from text. Returns (min, max) or None."""
+        import re
+
+        haystack = title + " " + description
+        # Match patterns like "$500M", "USD 1.2M", "COP $800 millones", "USD 500,000"
+        usd_matches = re.findall(
+            r"(?:USD|US\$|\$)\s*([\d,\.]+)\s*(?:million|M|millones?)?",
+            haystack,
+            re.IGNORECASE,
+        )
+        cop_matches = re.findall(
+            r"(?:COP|cop|\$)\s*([\d,\.]+)\s*(?:millones?|mil millones?|B)?",
+            haystack,
+            re.IGNORECASE,
+        )
+
+        amounts: list[int] = []
+        # Convert USD matches to COP (approximate: 1 USD = 4 200 COP)
+        USD_TO_COP = 4_200
+        for raw in usd_matches:
+            try:
+                val = float(raw.replace(",", ""))
+                if val < 10_000:
+                    # Likely expressed in millions
+                    val *= 1_000_000
+                amounts.append(int(val * USD_TO_COP))
+            except ValueError:
+                continue
+
+        for raw in cop_matches:
+            try:
+                val = float(raw.replace(",", ""))
+                if val < 10_000:
+                    val *= 1_000_000
+                amounts.append(int(val))
+            except ValueError:
+                continue
+
+        if not amounts:
+            return None
+        return (min(amounts), max(amounts))
+
+    def _detect_convocation_type(self, title: str, description: str) -> str:
+        """Classify convocation type: grant | premio | evento | curso."""
+        haystack = (title + " " + description).lower()
+        if any(kw in haystack for kw in ("premio", "award", "prize")):
+            return "premio"
+        if any(kw in haystack for kw in ("evento", "conference", "conferencia", "summit", "cumbre", "webinar")):
+            return "evento"
+        if any(kw in haystack for kw in ("curso", "training", "capacitación", "workshop", "taller")):
+            return "curso"
+        return "grant"
 
 
 def _clean_html(html: str) -> str:
